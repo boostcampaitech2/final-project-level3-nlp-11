@@ -8,22 +8,19 @@ from utils.request_blog import RequestBlog
 from pathlib import Path
 from utils.replace_text import ReplaceText
 from dotenv import load_dotenv
-env_path = os.path.expanduser('~/final-project-level3-nlp-11/code/.env')
-load_dotenv(dotenv_path=env_path,verbose=True)
+
+env_path = os.path.expanduser("~/final-project-level3-nlp-11/code/.env")
+load_dotenv(dotenv_path=env_path, verbose=True)
+
 
 class Crawling_naver:
-    def __init__(self,query) -> None:
+    def __init__(self, query) -> None:
         self.query = query
-        
+
     def get_result(self):
         query = self.query
-        id,name = self.get_id(query)
-        info = {
-            "query":query,
-            "search_name":name,
-            "total":0,
-            "Error":[]
-        }
+        id, name = self.get_id(query)
+        info = {"query": query, "search_name": name, "total": 0, "Error": []}
         if id == -1:
             return None, info
         urls = self.get_blog_url(id)
@@ -35,14 +32,14 @@ class Crawling_naver:
         for i, url in enumerate(urls):
             now = time.time()
             print(f"\r{query} {i+1} runtime: {now - start:.2f}", end="")
-            text,url = self.get_context(url)
+            text, url = self.get_context(url)
             if not text:
                 info["Error"].append(url)
                 continue
-            contexts.append({"context":text,"url":url})
-        
+            contexts.append({"context": text, "url": url})
+
         # contexts = list(filter(None,contexts))
-        info["total"]=len(contexts)
+        info["total"] = len(contexts)
         print("\n")
         return contexts, info
 
@@ -53,15 +50,15 @@ class Crawling_naver:
         url = f"https://m.map.naver.com/search2/searchMore.naver?query={query_}&sm=clk&style=v5&page=1&displayCount=75&type=SITE_1"
 
         response = json.loads(RequestBlog().get(url).text)
-        
+
         if not "site" in response["result"]:
-            print(f"query:{query} \"정보 없음\"")
+            print(f'query:{query} "정보 없음"')
             id = -1
-            return id,None
+            return id, None
         id = response["result"]["site"]["list"][0]["id"]
         name = response["result"]["site"]["list"][0]["name"]
         id = id[1:]
-        return id,name
+        return id, name
 
     def get_blog_url(self, id):
         url = f"https://api.place.naver.com/place/graphql"
@@ -146,36 +143,33 @@ class Crawling_naver:
             return text, url
         # 카페 처리 부분
         elif re.findall(r"""http:\/\/cafe.naver.com.*""", url):
-            return None,url
+            return None, url
         else:
             print(f"\nError {url}")
-            return None,url
+            return None, url
+
 
 if __name__ == "__main__":
     start = time.time()
-    type_list = ['관광지', '문화시설', '행사/공연/축제', '레포츠']
-    file_path = os.getenv('DATA_GEN_DATA_PATH')
-    with open(file_path+"tour_spot_name.json",'r')as f:
+    type_list = ["관광지", "문화시설", "행사/공연/축제", "레포츠"]
+    file_path = os.getenv("DATA_GEN_DATA_PATH")
+    with open(file_path + "tour_spot_name.json", "r") as f:
         tour_name = json.load(f)
-    
+
     info = {}
     for state in tour_name.keys():
         info[state] = {}
         for types in type_list:
             info[state][types] = {}
-            for i,location in enumerate(tour_name[state][types].keys()):
-                
-                if i==0:
+            for i, location in enumerate(tour_name[state][types].keys()):
+                if i == 0:
                     continue
                 crawling = Crawling_naver(location)
-                result,info_ = crawling.get_result()
-                info[state][types][location] = info_                    
-        
+                result, info_ = crawling.get_result()
+                info[state][types][location] = info_
+
     now = time.time()
     print(f"runtime: {now - start:.2f}")
-    
-    with open(file_path+"test.json","w",encoding="utf-8-sig") as f:
-        json.dump(info,f,indent=4,ensure_ascii=False)            
 
-        
-    
+    with open(file_path + "test.json", "w", encoding="utf-8-sig") as f:
+        json.dump(info, f, indent=4, ensure_ascii=False)

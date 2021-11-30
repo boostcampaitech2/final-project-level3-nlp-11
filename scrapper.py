@@ -118,9 +118,16 @@ def main():
                         text = f"{loc} {s}"
                         search_texts.append([text, s, loc, theme])
 
+    # chrome_options setting for server
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument("--single-process")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+
     # 자신의 크롬드라이브 위치
     driver_path = "/Users/woowonjin/Downloads/chromedriver"
-    driver = webdriver.Chrome(driver_path)
+    driver = webdriver.Chrome(driver_path, chrome_options)
     for search_text, spot, loc, theme in tqdm(search_texts):
         spot = spot.replace('/', ' ')
         if not os.path.exists(f"./data/{loc}"):

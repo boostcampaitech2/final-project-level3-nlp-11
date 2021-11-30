@@ -122,13 +122,16 @@ def main():
     driver_path = "/Users/woowonjin/Downloads/chromedriver"
     driver = webdriver.Chrome(driver_path)
     for search_text, spot, loc, theme in tqdm(search_texts):
-        data = start_search(driver, search_text)
         if not os.path.exists(f"./data/{loc}"):
             os.makedirs(f"./data/{loc}")
         if not os.path.exists(f"./data/{loc}/{theme}"):
             os.makedirs(f"./data/{loc}/{theme}")
-        df = pd.DataFrame(data, columns=["place", "star", "review"])
-        df.to_csv(f"./data/{loc}/{theme}/{spot}.csv")
+        if not f"{spot}.csv" in os.listdir(f"data/{loc}/{theme}"):
+            data = start_search(driver, search_text)
+            df = pd.DataFrame(data, columns=["place", "star", "review"])
+            df.to_csv(f"./data/{loc}/{theme}/{spot}.csv")
+        else:
+            print(f"{spot}.csv is already exists!!")
 
 
 if __name__ == "__main__":

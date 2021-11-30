@@ -2,7 +2,7 @@
 
 ### 1
 
-- 웹사이트(https://chromedriver.chromium.org/home)에서 각자 크롬 버전에 맞는 크롬드라이브 설치하기
+- 웹사이트(https://chromedriver.chromium.org/home) 에서 각자 크롬 버전에 맞는 크롬드라이브 설치하기
 
 ### 2
 

@@ -130,6 +130,7 @@ def main():
     driver = webdriver.Chrome(driver_path, chrome_options=chrome_options)
     for search_text, spot, loc, theme in tqdm(search_texts):
         spot = spot.replace('/', ' ')
+        theme = theme.replace('/', '_')
         if not os.path.exists(f"./data/{loc}"):
             os.makedirs(f"./data/{loc}")
         if not os.path.exists(f"./data/{loc}/{theme}"):

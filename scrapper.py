@@ -122,6 +122,7 @@ def main():
     driver_path = "/Users/woowonjin/Downloads/chromedriver"
     driver = webdriver.Chrome(driver_path)
     for search_text, spot, loc, theme in tqdm(search_texts):
+        spot = spot.replace('/', ' ')
         if not os.path.exists(f"./data/{loc}"):
             os.makedirs(f"./data/{loc}")
         if not os.path.exists(f"./data/{loc}/{theme}"):

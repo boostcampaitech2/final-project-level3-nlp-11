@@ -22,7 +22,7 @@ seoul_reports = json_data['서울']['레포츠']
 # In[3]:
 
 
-seoul_tour
+
 
 
 # In[4]:
@@ -49,7 +49,7 @@ seoul_reports = data_make(seoul_reports)
 # In[6]:
 
 
-seoul_tour
+
 
 
 # In[7]:
@@ -197,7 +197,7 @@ final = temp_result.T
 # In[21]:
 
 
-final
+#final
 
 
 # In[22]:
@@ -209,7 +209,7 @@ final.to_csv("seoul_tour_naver_cafe.csv", mode='w')
 # In[27]:
 
 
-final
+#final
 
 
 # In[28]:

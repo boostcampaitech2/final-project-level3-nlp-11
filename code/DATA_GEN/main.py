@@ -11,31 +11,20 @@ from src.crawling.utils.csv_to_json import CsvToJson
 def main(args):
     # 모든 데이터 크롤링 코드 (엄청 오래걸림)
     if args.run_crawling:
-        crawling(args)
+        Crawling_naver(args)
+        CafeCrawling(args)
+        Google_crawling(args)
 
     # blog,google,caf 데이터 전처리
     if args.run_preprocess:
-        preprocess(args)
+        PreprocessBlog(args)
 
     # google to json
     CsvToJson(args)
 
     if args.run_mk_pair:
-        return
+        pass
         # make pair
-    return
-
-
-def crawling(args):
-    Crawling_naver(args)
-    CafeCrawling(args)
-    Google_crawling(args)
-    return
-
-
-def preprocess(args):
-
-    PreprocessBlog(args)
     return
 
 

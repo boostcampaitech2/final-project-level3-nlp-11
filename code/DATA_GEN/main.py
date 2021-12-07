@@ -14,6 +14,9 @@ def main(args):
     # google 데이터 전처리
     # cafe 데이터 전처리
 
+    # google to json
+
+    # make pair
     return
 
 
@@ -27,7 +30,7 @@ def crawling(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config_file", type=str, default="./src/config.conf", help="config file"
+        "--config_file", type=str, default="./config/config.conf", help="config file"
     )
     args, left_argv = parser.parse_known_args()
     if args.config_file:

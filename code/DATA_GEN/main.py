@@ -5,10 +5,10 @@ from src.crawling.blog_crawling import Crawling_naver
 from src.crawling.cafe_crawling import CafeCrawling
 from src.crawling.scrapper import Google_crawling
 from src.preprocess.preprocess_blog import PreprocessBlog
+from src.crawling.utils.csv_to_json import CsvToJson
 
 
 def main(args):
-    print(args)
     # 모든 데이터 크롤링 코드 (엄청 오래걸림)
     if args.run_crawling:
         crawling(args)
@@ -18,6 +18,8 @@ def main(args):
         preprocess(args)
 
     # google to json
+    CsvToJson(args)
+
     if args.run_mk_pair:
         return
         # make pair
@@ -111,6 +113,21 @@ if __name__ == "__main__":
         default="info_prepro.json",
         help="output_info",
     )
+
+    parser.add_argument(
+        "--csv_file_name",
+        type=str,
+        default="review.csv",
+        help="csv_file_name",
+    )
+
+    parser.add_argument(
+        "--output_json_file_name",
+        type=str,
+        default="review.json",
+        help="output_json_file_name",
+    )
+
     for k, v in config.items("preprocess"):
         parser.parse_args([str(k), str(v)], args)
 

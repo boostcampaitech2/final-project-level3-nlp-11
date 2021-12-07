@@ -4,19 +4,23 @@ import configparser
 from src.crawling.blog_crawling import Crawling_naver
 from src.crawling.cafe_crawling import CafeCrawling
 from src.crawling.scrapper import Google_crawling
+from src.preprocess.preprocess_blog import PreprocessBlog
 
 
 def main(args):
+    print(args)
     # 모든 데이터 크롤링 코드 (엄청 오래걸림)
-    crawling(args)
+    if args.run_crawling:
+        crawling(args)
 
-    # blog 데이터 전처리
-    # google 데이터 전처리
-    # cafe 데이터 전처리
+    # blog,google,caf 데이터 전처리
+    if args.run_preprocess:
+        preprocess(args)
 
     # google to json
-
-    # make pair
+    if args.run_mk_pair:
+        return
+        # make pair
     return
 
 
@@ -24,6 +28,12 @@ def crawling(args):
     Crawling_naver(args)
     CafeCrawling(args)
     Google_crawling(args)
+    return
+
+
+def preprocess(args):
+
+    PreprocessBlog(args)
     return
 
 
@@ -50,13 +60,19 @@ if __name__ == "__main__":
         help="use start_point",
     )
     parser.add_argument(
-        "--name_path", type=str, default="tour_spot_name.json", help="set start_point"
+        "--name_path",
+        type=str,
+        default="tour_spot_name.json",
+        help="original name file name",
     )
     parser.add_argument(
-        "--info_path", type=str, default="test_info.json", help="set start_point"
+        "--info_path", type=str, default="test_info.json", help="new info file name"
     )
     parser.add_argument(
-        "--result_path", type=str, default="test_result.json", help="set start_point"
+        "--result_path",
+        type=str,
+        default="test_result.json",
+        help="new result file name",
     )
     parser.add_argument(
         "--driver_path",
@@ -65,10 +81,60 @@ if __name__ == "__main__":
         help="chromedriver_path",
     )
     parser.add_argument(
-        "--num", default=-1, type=int, help="An number for seperating task"
+        "--num", default=7, type=int, help="An number for seperating task"
     )
 
     for k, v in config.items("crawling"):
+        parser.parse_args([str(k), str(v)], args)
+
+    parser.add_argument(
+        "--input_result",
+        type=str,
+        default="result_latest.json",
+        help="input_result",
+    )
+    parser.add_argument(
+        "--input_info",
+        type=str,
+        default="info_latest.json",
+        help="input_info",
+    )
+    parser.add_argument(
+        "--output_result",
+        type=str,
+        default="result_prepro.json",
+        help="output_result",
+    )
+    parser.add_argument(
+        "--output_info",
+        type=str,
+        default="info_prepro.json",
+        help="output_info",
+    )
+    for k, v in config.items("preprocess"):
+        parser.parse_args([str(k), str(v)], args)
+
+    parser.add_argument(
+        "--run_crawling",
+        type=bool,
+        default=False,
+        help="To make original file default False",
+    )
+
+    parser.add_argument(
+        "--run_preprocess",
+        type=bool,
+        default=False,
+        help="run preprocess in src/preprocess default False",
+    )
+
+    parser.add_argument(
+        "--run_mk_pair",
+        type=bool,
+        default=True,
+        help="run mk_pair in src/mk_pair default True",
+    )
+    for k, v in config.items("progress"):
         parser.parse_args([str(k), str(v)], args)
 
     args = parser.parse_args(left_argv, args)

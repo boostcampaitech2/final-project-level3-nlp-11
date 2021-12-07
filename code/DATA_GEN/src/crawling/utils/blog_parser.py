@@ -1,6 +1,6 @@
 import re
 from bs4 import BeautifulSoup
-from utils.replace_text import ReplaceText
+from src.crawling.utils.replace_text import ReplaceText
 
 
 class BlogParser:

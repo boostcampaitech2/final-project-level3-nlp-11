@@ -3,10 +3,12 @@ import urllib.parse
 import json
 import time
 import argparse
-from utils.request_blog import RequestBlog
-from utils.blog_parser import BlogParser
+import warnings
+from src.crawling.utils.request_blog import RequestBlog
+from src.crawling.utils.blog_parser import BlogParser
 from dotenv import load_dotenv
 
+warnings.filterwarnings("ignore")
 env_path = os.path.expanduser("~/final-project-level3-nlp-11/code/.env")
 load_dotenv(dotenv_path=env_path, verbose=True)
 

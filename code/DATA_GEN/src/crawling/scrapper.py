@@ -17,7 +17,8 @@ def start_search(driver, search_text):
     driver.get(URL)
 
     search = driver.find_element_by_css_selector(
-        "input#searchboxinput.tactile-searchbox-input")
+        "input#searchboxinput.tactile-searchbox-input"
+    )
     time.sleep(1)
     search.clear()
     search.send_keys(search_text)
@@ -33,7 +34,8 @@ def get_review_data(driver, search_text):
         try:
             time.sleep(5)
             more_review_btn = driver.find_element_by_css_selector(
-                "button[aria-label*='리뷰 더보기']")
+                "button[aria-label*='리뷰 더보기']"
+            )
             more_review_btn.send_keys(Keys.ENTER)
         except Exception as e:
             print(e)
@@ -45,7 +47,8 @@ def get_review_data(driver, search_text):
             # scroll = driver.find_element_by_css_selector(
             #     'div.Yr7JMd-pane-content.cYB2Ge-oHo7ed')
             scroll = driver.find_element_by_css_selector(
-                'div.siAUzd-neVct.section-scrollbox.cYB2Ge-oHo7ed.cYB2Ge-ti6hGc')
+                "div.siAUzd-neVct.section-scrollbox.cYB2Ge-oHo7ed.cYB2Ge-ti6hGc"
+            )
             # print(scroll)
             # print(scroll.scrollTop)
             # print(scroll.scrollHeight)
@@ -53,9 +56,11 @@ def get_review_data(driver, search_text):
             # driver.execute_script(
             #     '', scroll)
             driver.execute_script(
-                "arguments[0].scrollTop = arguments[0].scrollHeight", scroll)
+                "arguments[0].scrollTop = arguments[0].scrollHeight", scroll
+            )
             new_height = driver.execute_script(
-                "return arguments[0].scrollHeight", scroll)
+                "return arguments[0].scrollHeight", scroll
+            )
             if new_height == last_height:
                 cnt += 1
                 if cnt >= 10:
@@ -72,15 +77,22 @@ def get_review_data(driver, search_text):
     # 모든 리뷰 로딩 완료
     reviews = driver.find_elements_by_css_selector("span.ODSEW-ShBeI-text")
     stars = driver.find_elements_by_css_selector("span.ODSEW-ShBeI-H1e3jb")
-    data = [[search_text, re.search(r'[0-9]', star.get_attribute("aria-label")).group(), review.text.replace("\n", " ")]
-            for star, review in zip(stars, reviews)]
+    data = [
+        [
+            search_text,
+            re.search(r"[0-9]", star.get_attribute("aria-label")).group(),
+            review.text.replace("\n", " "),
+        ]
+        for star, review in zip(stars, reviews)
+    ]
     return data
 
 
 def main():
-    parser = argparse.ArgumentParser(description='For Person')
-    parser.add_argument('--num', default=-1, type=int,
-                        help='An number for seperating task')
+    parser = argparse.ArgumentParser(description="For Person")
+    parser.add_argument(
+        "--num", default=-1, type=int, help="An number for seperating task"
+    )
     args = parser.parse_args()
     if args.num == -1:
         print("개인 번호를 입력해주세요.")
@@ -120,8 +132,8 @@ def main():
 
     # chrome_options setting for server
     chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument('--headless')
-    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--single-process")
     chrome_options.add_argument("--disable-dev-shm-usage")
 
@@ -129,8 +141,8 @@ def main():
     driver_path = "/Users/woowonjin/Downloads/chromedriver"
     driver = webdriver.Chrome(driver_path, chrome_options=chrome_options)
     for search_text, spot, loc, theme in tqdm(search_texts):
-        spot = spot.replace('/', ' ')
-        theme = theme.replace('/', '_')
+        spot = spot.replace("/", " ")
+        theme = theme.replace("/", "_")
         if not os.path.exists(f"./data/{loc}"):
             os.makedirs(f"./data/{loc}")
         if not os.path.exists(f"./data/{loc}/{theme}"):

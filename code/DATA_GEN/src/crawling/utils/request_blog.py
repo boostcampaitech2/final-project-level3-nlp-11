@@ -11,9 +11,9 @@ class RequestBlog:
 
     def get(self, url):
         try:
-            response = requests.get(url,timeout=5)
+            response = requests.get(url, timeout=5)
         except:
-            request_result = self.requset_again("get",url,None)
+            request_result = self.requset_again("get", url, None)
             if request_result:
                 response = request_result
             else:
@@ -24,7 +24,7 @@ class RequestBlog:
 
     def post(self, url, query):
         try:
-            response = requests.post(url, json=query,timeout=5)
+            response = requests.post(url, json=query, timeout=5)
         except:
             requset_result = self.requset_again("post", url, query)
             if requset_result:

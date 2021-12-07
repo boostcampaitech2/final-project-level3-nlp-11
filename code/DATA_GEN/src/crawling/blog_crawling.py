@@ -18,31 +18,31 @@ class Crawling_naver:
         type_list = ["관광지", "문화시설", "행사/공연/축제", "레포츠"]
         file_path = os.getenv("DATA_GEN_DATA_PATH")
         start_point = {
-            "state":args.start_state,
-            "type":args.start_type,
-            "location":args.start_location,
-            "flag":args.use_start_point,
+            "state": args.start_state,
+            "type": args.start_type,
+            "location": args.start_location,
+            "flag": args.use_start_point,
         }
-        self.mk_file(type_list,file_path,start_point,args)
+        self.mk_file(type_list, file_path, start_point, args)
         now = time.time()
         print(f"runtime: {now - start:.2f}")
 
-    def mk_file(self,type_list,file_path,start_point,args):
-        with open(file_path + args.name_path, "r",encoding ='utf-8-sig') as f:
+    def mk_file(self, type_list, file_path, start_point, args):
+        with open(file_path + args.name_path, "r", encoding="utf-8-sig") as f:
             try:
                 tour_name = json.load(f)
             except:
                 print("error need tour_spot_name data")
                 exit(1)
         if not os.path.isfile(file_path + args.info_path):
-            f = open(file_path + args.info_path,'w')
+            f = open(file_path + args.info_path, "w")
             f.close()
-        with open(file_path + args.info_path,'r',encoding ='utf-8-sig')as f:
+        with open(file_path + args.info_path, "r", encoding="utf-8-sig") as f:
             try:
                 info = json.load(f)
             except:
                 info = {}
-        
+
         for state in tour_name.keys():
             if state != start_point["state"] and start_point["flag"]:
                 continue
@@ -67,10 +67,14 @@ class Crawling_naver:
                     if result:
                         tour_name[state][types][location].extend(result)
 
-                    with open(file_path + args.info_path, "w", encoding="utf-8-sig") as f:
+                    with open(
+                        file_path + args.info_path, "w", encoding="utf-8-sig"
+                    ) as f:
                         json.dump(info, f, indent=4, ensure_ascii=False)
-                    
-                    with open(file_path + args.result_path, "w", encoding="utf-8-sig") as f:
+
+                    with open(
+                        file_path + args.result_path, "w", encoding="utf-8-sig"
+                    ) as f:
                         json.dump(tour_name, f, indent=4, ensure_ascii=False)
 
     def get_result(self):
@@ -92,7 +96,7 @@ class Crawling_naver:
             if not text:
                 info["Error"].append(url)
                 continue
-            contexts.append({"context": text, "url": url, "type":"blog"})
+            contexts.append({"context": text, "url": url, "type": "blog"})
 
         # contexts = list(filter(None,contexts))
         info["total"] = len(contexts)
@@ -111,7 +115,7 @@ class Crawling_naver:
             print(f'query:{query} "정보 없음"')
             id = -1
             return id, None
-        elif  not "site" in response["result"]:
+        elif not "site" in response["result"]:
             print(f'query:{query} "정보 없음"')
             id = -1
             return id, None
@@ -170,17 +174,27 @@ class Crawling_naver:
 
     def get_context(self, url):
         response = RequestBlog().get(url)
-        return BlogParser(response,url).get_result()
+        return BlogParser(response, url).get_result()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--start_state', type=str, default="서울", help='set start_point')
-    parser.add_argument('--start_type', type=str, default="관광지", help='set start_point')
-    parser.add_argument('--start_location', type=str, default="간데메공원", help='set start_point')
-    parser.add_argument('--use_start_point',type=bool, default=False,help='use start_point')
-    parser.add_argument('--name_path', type=str, default="tour_spot_name.json", help='set start_point')
-    parser.add_argument('--info_path', type=str, default="test_info.json", help='set start_point')
-    parser.add_argument('--result_path', type=str, default="test_result.json", help='set start_point')
+    parser.add_argument("--start_state", type=str, default="서울", help="set start_point")
+    parser.add_argument("--start_type", type=str, default="관광지", help="set start_point")
+    parser.add_argument(
+        "--start_location", type=str, default="간데메공원", help="set start_point"
+    )
+    parser.add_argument(
+        "--use_start_point", type=bool, default=False, help="use start_point"
+    )
+    parser.add_argument(
+        "--name_path", type=str, default="tour_spot_name.json", help="set start_point"
+    )
+    parser.add_argument(
+        "--info_path", type=str, default="test_info.json", help="set start_point"
+    )
+    parser.add_argument(
+        "--result_path", type=str, default="test_result.json", help="set start_point"
+    )
     args = parser.parse_args()
     Crawling_naver(args)

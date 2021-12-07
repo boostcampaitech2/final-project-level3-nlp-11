@@ -13,7 +13,11 @@ class ReplaceText:
         # 공백 2개 한개로 변경
         context = re.sub(r""" +(?= )""", "", context)
         # URL
-        context = re.sub(r"""https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)""", "", context)
+        context = re.sub(
+            r"""https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)""",
+            "",
+            context,
+        )
         # dict 형식 제거
         context = re.sub(r"""{[^}]*}""", " ", context)
         # 온점 후 띄어쓰기 강제

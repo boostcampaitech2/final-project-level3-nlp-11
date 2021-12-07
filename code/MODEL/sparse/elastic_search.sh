@@ -16,3 +16,5 @@ then
         elasticsearch-7.9.2/bin/elasticsearch-plugin install analysis-nori
     fi
 fi
+
+cp /opt/ml/final-project-level3-nlp-11/etc/my_stop_dic.txt /opt/ml/final-project-level3-nlp-11/code/MODEL/sparse/elasticsearch-7.9.2/config/

@@ -329,7 +329,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--save_pickle_path",
-        default="../data/dense/dense_embedding.bin",
+        default="../data/dense/dense_embedding",
         type=str,
         help="wiki embedding save path",
     )
@@ -380,4 +380,4 @@ if __name__ == "__main__":
         q_encoder,
     )
     retriever.train()
-    retriever.save_embedding(args.save_pickle_path + ".bin")
+    retriever.save_embedding(args.save_pickle_path + "_epoch_{}.bin".format(args.num_train_epochs))

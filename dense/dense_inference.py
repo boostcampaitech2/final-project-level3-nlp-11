@@ -241,6 +241,10 @@ if __name__ == "__main__":
     print('Question :',test_query)
     df = retrieval.retrieval(test_query, topk=5)
     print('----------------------------------------------------------------------------')
+    test_query = '따뜻하고 새소리 잘 들리는 곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
     # print("----- train top-10 -----")
     # df = retrieval.retrieval(topk=10)
     # df = retrieval.get_acc_score(df)

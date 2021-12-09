@@ -163,3 +163,35 @@ def neg_sample_sim_scores(
     sim_scores = F.log_softmax(sim_scores, dim=1)
 
     return sim_scores
+
+def get_train_dataset(data_path:str="/opt/ml/final-project-level3-nlp-11/data/MODEL/pair.json"):
+    with open(data_path, "r", encoding="utf-8-sig") as f:
+        pair_data = json.load(f)
+    
+    context_info_dict = []
+    context_place = []
+    
+    for area in pair_data:
+        for place in pair_data[area]['관광지']:
+            for pair in pair_data[area]['관광지'][place]:
+                context_info_dict.append(
+                    {
+                        "area":area,
+                        "place":place,
+                        "query":pair["query"],
+                        "context":pair["context"],
+                    }
+                )
+                context_place.append(
+                    {
+                        "place":place
+                    }
+                )
+    df_info = pd.DataFrame(context_info_dict)
+    df_place = pd.DataFrame(context_place)
+    
+    info_train, info_val = train_test_split(
+        df_info, test_size=0.2, random_state=2022, stratify=df_info["place"])
+    
+    return DatasetDict({"train": Dataset.from_pandas(info_train, features=f),
+                        "validation": Dataset.from_pandas(info_val, features=f)})

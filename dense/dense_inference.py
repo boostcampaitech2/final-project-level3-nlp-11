@@ -241,11 +241,111 @@ if __name__ == "__main__":
     print('Question :',test_query)
     df = retrieval.retrieval(test_query, topk=5)
     print('----------------------------------------------------------------------------')
-    # print("----- train top-10 -----")
-    # df = retrieval.retrieval(topk=10)
-    # df = retrieval.get_acc_score(df)
-    # retrieval.print_result(df, 10)
-    # print("----- train top-50 -----")
-    # df = retrieval.retrieval(topk=50)
-    # df = retrieval.get_acc_score(df)
-    # retrieval.print_result(df, 50)
+    test_query = '혼자 힐링하기 좋은곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '마음이 우울할때 가기 좋은곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '친구들과 액티비티 하기 좋은곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '부모님과 함께 가기 좋은곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '여자친구와 함께 가서 놀기 좋은곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '서울에 놀이똥산 같은곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '아이들과 과학적 체험이 가능한곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '궁궐 보기 좋은곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '생명의 소중함이 느껴지는곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '자존감 회복에 좋은곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '생각 비우기 좋은 곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '술 마시면서 놀기 좋은곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '강남 빼고 갈만한곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')    
+    test_query = '해돋이가 아름다운곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '시원한곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')    
+    test_query = '물 맑은 계곡'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '실연당한 마음을 보듬어줄 곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '스피드를 온몸으로 느끼는 곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')   
+    test_query = '밥 맛있고 물가 싸고 쾌적한 곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '노상방뇨가 가능한 곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')    
+    test_query = '중력이 거꾸로 작용하는 곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')    
+    test_query = '유동 인구가 가장 많은 곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')
+    test_query = '근처에 산과 계곡이 있는 곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')    
+    test_query = '서울에 사람이 별로 없는 벚꽃 구경할 만한 곳'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')    
+    test_query = '가족들과 캠핑할 만한 계곡 주변 장소'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')    
+    test_query = '수원시 주변에 여자친구와 갈 만한 미술관'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')    
+    test_query = '금속탐지기와 취미생활이 가능한 장소'
+    print('Question :',test_query)
+    df = retrieval.retrieval(test_query, topk=5)
+    print('----------------------------------------------------------------------------')   

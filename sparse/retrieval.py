@@ -75,8 +75,7 @@ class SparseRetrieval:
         # Transform by vectorizer
         self.tfidfv = TfidfVectorizer(
             tokenizer=tokenize_fn,
-            ngram_range=(1, 2),
-            # max_features=50000,
+            ngram_range=(1, 2), 
         )
 
         self.p_embedding = None  # get_sparse_embedding()로 생성합니다

@@ -42,6 +42,7 @@ class DenseRetrieval:
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.tokenizer = AutoTokenizer.from_pretrained(self.args.tokenizer_name)
         
+        self.p_embedding = None
         self.contexts = []
         self.places = []
         with open(self.args.dataset_name, "r", encoding="utf-8-sig") as f:
@@ -92,7 +93,8 @@ class DenseRetrieval:
         print("Embedding pickle saved.")
         
     def inference(self, query_or_dataset, topk=5):
-        self.get_embedding()
+        if self.p_embedding == None:
+            self.get_embedding()
         doc_scores, doc_indices = self.get_relevant_doc(
             single_query, k=topk
         )

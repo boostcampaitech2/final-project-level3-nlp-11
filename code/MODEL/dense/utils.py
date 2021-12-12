@@ -9,8 +9,11 @@ from tqdm.auto import tqdm
 
 from transformers import AutoTokenizer, AutoModel
 
+from sklearn.model_selection import train_test_split
 import torch.nn.functional as F
 
+from torch.utils.data import DataLoader
+from datasets import Dataset, DatasetDict, Value, Features
 
 def retrieve_from_embedding(
     dataset_path: str,
@@ -169,7 +172,6 @@ def get_train_dataset(data_path:str="/opt/ml/final-project-level3-nlp-11/data/MO
         pair_data = json.load(f)
     
     context_info_dict = []
-    context_place = []
     
     for area in pair_data:
         for place in pair_data[area]['관광지']:
@@ -182,16 +184,20 @@ def get_train_dataset(data_path:str="/opt/ml/final-project-level3-nlp-11/data/MO
                         "context":pair["context"],
                     }
                 )
-                context_place.append(
-                    {
-                        "place":place
-                    }
-                )
+    
     df_info = pd.DataFrame(context_info_dict)
-    df_place = pd.DataFrame(context_place)
     
     info_train, info_val = train_test_split(
         df_info, test_size=0.2, random_state=2022, stratify=df_info["place"])
+    
+    f = Features(
+        {
+            "area": Value(dtype="string", id=None),
+            "place": Value(dtype="string", id=None),
+            "query": Value(dtype="string", id=None),
+            "context": Value(dtype="string", id=None),
+        }
+    )
     
     return DatasetDict({"train": Dataset.from_pandas(info_train, features=f),
                         "validation": Dataset.from_pandas(info_val, features=f)})

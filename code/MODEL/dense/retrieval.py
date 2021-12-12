@@ -4,6 +4,7 @@ import pickle
 import argparse
 import json
 import wandb
+from time import time
 
 from typing import List, Tuple, NoReturn, Any, Optional, Union
 from tqdm.auto import tqdm
@@ -24,36 +25,33 @@ from transformers import (
     set_seed,
 )
 
-from dataset import (
-    TrainRetrievalDataset,
-    TrainRetrievalNegativeDataset,
-)
-from utils import (
-    neg_sample_input,
-    neg_sample_sim_scores,
-    inbatch_input,
-    inbatch_sim_scores,
-)
+from dataset import *
+from utils import *
 
 
 class DenseRetrieval:
     def __init__(
         self,
         args,
-        num_neg: int,
         p_encoder: AutoModel,
         q_encoder: AutoModel,
     ) -> None:
         self.args = args
-        self.num_neg = num_neg
         self.p_encoder = p_encoder
         self.q_encoder = q_encoder
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.tokenizer = AutoTokenizer.from_pretrained(self.args.tokenizer_name)
-        with open(self.args.context_path, "r", encoding="utf-8") as f:
-            wiki = json.load(f)
-            self.contexts = list(dict.fromkeys([v["text"] for v in wiki.values()]))
-
+        
+        self.contexts = []
+        self.places = []
+        with open(self.args.dataset_name, "r", encoding="utf-8-sig") as f:
+            location_list = json.load(f)
+            for area in location_list:
+                for location in location_list[area]['관광지']:
+                    for pair in location_list[area]['관광지'][location]:
+                        self.contexts.append(pair['context'])
+                        self.places.append(location)
+        
         torch.cuda.empty_cache()
     
     def get_embedding(self):
@@ -79,7 +77,7 @@ class DenseRetrieval:
 
             for p in tqdm(contexts):
                 p = tokenizer(
-                    p, padding="max_length", truncation=True, return_tensors="pt"
+                    p, padding="max_length", max_length=self.args.token_length, truncation=True, return_tensors="pt"
                 ).to("cuda")
                 p_emb = p_encoder(**p).pooler_output.to("cpu").detach().numpy()
                 p_embs.append(p_emb)
@@ -91,90 +89,75 @@ class DenseRetrieval:
         with open(save_path, "wb") as file:
             pickle.dump(p_embedding, file)
         print("Embedding pickle saved.")
-    
-    def get_relevant_doc_bulk(self, queries: list, k=1):
+        
+    def inference(self, query_or_dataset, topk=5):
+        assert self.p_embedding is not None
+        doc_scores, doc_indices = self.get_relevant_doc(
+            single_query, k=topk
+        )
+        total = []
+        for i in range(topk):
+            print(f"Top-{i+1} passage with score {doc_scores[i]:4f}")
+            print('Content name :', self.places[doc_indices[i]])
+            print('Contexts :', self.contextx[doc_indices[i]])
+            tmp = {
+                # Retrieve한 Passage의 id, context를 반환합니다.
+                "rank": i,
+                "scores": doc_scores[idx],
+                "place": self.places[doc_indices[i]],
+                "context_id": doc_indices[idx],
+                "context": self.contexts[doc_indices[i]]
+            }
+            total.append(tmp)
+        pred_places = pd.DataFrame(total)
+        return pred_places
+
+    def get_relevant_doc(self, query: str, k = 1):
         q_encoder = self.q_encoder
         q_embs = []
 
         with torch.no_grad():
             q_encoder.eval()
+            print('getting Query X Passage scores')
+            q = tokenizer(
+                query, max_length=self.args.max_length, padding="max_length", truncation=True, return_tensors="pt"
+            ).to("cuda")
+            q_emb = q_encoder(**q).pooler_output.to("cpu").detach().numpy()
 
-            for q in tqdm(queries):
-                q = tokenizer(
-                    q, padding="max_length", truncation=True, return_tensors="pt"
-                ).to("cuda")
-                q_emb = q_encoder(**q).pooler_output.to("cpu").detach().numpy()
-                q_embs.append(q_emb)
-
-        q_embs = np.array(q_embs)
-        q_embs = torch.Tensor(q_embs).squeeze()
-        result = torch.matmul(q_embs, torch.transpose(self.p_embedding, 0, 1))
+        # result = q_emb * self.p_embedding.T
+        q_emb = np.array(q_emb)
+        q_emb = torch.Tensor(q_emb).squeeze()
+        result = torch.matmul(q_emb, torch.transpose(self.p_embedding, 0, 1))
 
         if not isinstance(result, np.ndarray):
             result = np.array(result.tolist())
-        doc_scores = []
-        doc_indices = []
-        for i in range(result.shape[0]):
-            sorted_result = np.argsort(result[i, :])[::-1]
-            doc_scores.append(result[i, :][sorted_result].tolist()[:k])
-            doc_indices.append(sorted_result.tolist()[:k])
 
-        return doc_scores, doc_indices
-        
-    def inference(self, query_or_dataset, topk=1):
-        assert self.p_embedding is not None
-        total = []
-        doc_scores, doc_indices = self.get_relevant_doc_bulk(
-            query_or_dataset["question"], k=topk
-        )
-        for idx, example in enumerate(tqdm(query_or_dataset, desc="Dense retrieval: ")):
-            context_array = []
-            for pid in doc_indices[idx]:
-                context_array.append(context)
-            tmp = {
-                # Query와 해당 id를 반환합니다.
-                "question": example["question"],
-                "id": example["id"],
-                # Retrieve한 Passage의 id, context를 반환합니다.
-                "context_id": doc_indices[idx],
-                "context": context_array,
-                "scores": doc_scores[idx],
-            }
-            total.append(tmp)
-
-        pred_places = pd.DataFrame(total)
-        return pred_places
-
+        sorted_result = np.argsort(result.squeeze())[::-1]
+        doc_score = result.squeeze()[sorted_result].tolist()[:k]
+        doc_indices = sorted_result.tolist()[:k]
+        return doc_score, doc_indices
+    
     def train(self):
+        print("="*30, " Start Train !!! ", "="*30)
         p_encoder = self.p_encoder
         q_encoder = self.q_encoder
-        num_neg = self.num_neg
         args = self.args
         batch_size = args.batch_size
         
-        valid_dataset = datasets["validation"]
+        train_datadict = get_train_dataset()
+        train_data = train_datadict["train"]
+        val_data = train_datadict["validation"]
+        tokenizer = self.tokenizer
 
         # get in-batch dataset
-        if args.in_batch:
-            train_dataset = TrainRetrievalDataset(
-                args.tokenizer_name,
-                args.dataset_name,
-            )
-            train_dataloader = DataLoader(
-                train_dataset, shuffle=True, batch_size=batch_size, drop_last=True
-            )
-
-        ## get negative samples from wiki for first epoch
-        else:
-            train_dataset = TrainRetrievalNegativeDataset(
-                args.tokenizer_name,
-                args.dataset_name,
-                num_neg,
-                args.context_path,
-            )
-            train_dataloader = DataLoader(
-                train_dataset, shuffle=True, batch_size=batch_size
-            )
+        train_dataset = TrainInbatchDatasetJson(
+            tokenizer=self.tokenizer,
+            dataset=train_data,
+            max_length=self.args.token_length
+        )
+        train_dataloader = DataLoader(
+            train_dataset, shuffle=True, batch_size=batch_size, drop_last=True
+        )
 
         no_decay = ["bias", "LayerNorm.weight"]
         optimizer_grouped_parameters = [
@@ -232,9 +215,10 @@ class DenseRetrieval:
         p_encoder.zero_grad()
         q_encoder.zero_grad()
         torch.cuda.empty_cache()
-        best_top_10 = 0
+        best_top = {1:0, 5:0, 10:0, 30:0, 50:0, 100:0}
 
         for _ in tqdm(range(int(args.num_train_epochs)), desc="Epoch"):
+            print("-"*20, f" epoch {epoch} ", "-"*20)
             epoch += 1
             with tqdm(train_dataloader, unit="batch") as tepoch:
                 for batch in tepoch:
@@ -243,27 +227,14 @@ class DenseRetrieval:
 
                     global_step += 1
 
-                    if args.in_batch:
-                        q_inputs, p_inputs, targets = inbatch_input(
-                            batch, batch_size, self.device
-                        )
+                    q_inputs, p_inputs, targets = inbatch_input(
+                        batch, batch_size, self.device
+                    )
 
-                        p_outputs = p_encoder(**p_inputs).pooler_output
-                        q_outputs = q_encoder(**q_inputs).pooler_output
+                    p_outputs = p_encoder(**p_inputs).pooler_output
+                    q_outputs = q_encoder(**q_inputs).pooler_output
 
-                        sim_scores = inbatch_sim_scores(q_outputs, p_outputs)
-
-                    else:
-                        q_inputs, p_inputs, targets = neg_sample_input(
-                            batch, batch_size, self.device, num_neg
-                        )
-
-                        p_outputs = p_encoder(**p_inputs).pooler_output
-                        q_outputs = q_encoder(**q_inputs).pooler_output
-
-                        sim_scores = neg_sample_sim_scores(
-                            q_outputs, p_outputs, batch_size, num_neg
-                        )
+                    sim_scores = inbatch_sim_scores(q_outputs, p_outputs)
 
                     loss = F.nll_loss(sim_scores, targets)
                     tepoch.set_postfix(loss=f"{str(loss.item())}")
@@ -281,66 +252,59 @@ class DenseRetrieval:
 
                     if global_step % args.log_step == 0:
                         wandb.log({"loss": loss}, step=global_step)
-                        
+            
+            print(f'train epoch : {epoch} done')
             with torch.no_grad():
+                print(" testing for validation set ", "-"*40)
                 p_encoder.eval()
 
                 p_embs = []
-                for p in self.contexts:
-                    p = tokenizer(p, padding="max_length", truncation=True, return_tensors='pt').to('cuda')
+                for p in tqdm(self.contexts):
+                    p = tokenizer(p, max_length=self.args.token_length, padding="max_length", truncation=True, return_tensors='pt').to('cuda')
                     p_emb = p_encoder(**p).pooler_output.to('cpu').numpy()
                     p_embs.append(p_emb)
 
                 p_embs = torch.Tensor(p_embs).squeeze()  # (num_passage, emb_dim)
 
-                top_10 = 0
+                top = {1:0, 5:0, 10:0, 30:0, 50:0, 100:0}
+                print("tmp embdding done")
                 q_encoder.eval()
-                for sample_idx in tqdm(range(len(valid_dataset))):
-                    query = valid_dataset[sample_idx]["question"]
-                    sample_context = valid_dataset[sample_idx]["context"]
+                for datum in tqdm(val_data):
+                    query = datum["query"]
+                    sample_context = datum["context"]
 
-                    q_seqs_val = tokenizer([query], padding="max_length", truncation=True, return_tensors='pt').to('cuda')
+                    q_seqs_val = tokenizer([query], max_length=self.args.token_length, padding="max_length", truncation=True, return_tensors='pt').to('cuda')
                     q_emb = q_encoder(**q_seqs_val).pooler_output.to('cpu')  #(num_query, emb_dim)
 
                     dot_prod_scores = torch.matmul(q_emb, torch.transpose(p_embs, 0, 1))
                     rank = torch.argsort(dot_prod_scores, dim=1, descending=True).squeeze()
 
-                    for idx in rank[:10]:
+                    check = False
+                    for idx in rank[:100]:
                         if sample_context == self.contexts[idx]:
-                            top_10 += 1
-                            break
-            if top_10/len(valid_dataset) > best_top_10:
-                best_top_10 = top_10/len(valid_dataset)
-                p_encoder.save_pretrained(
-                    save_directory=f"{args.save_path_p}_{epoch}_{best_top_10}
-                )
-                q_encoder.save_pretrained(
-                    save_directory=f"{args.save_path_q}_{epoch}_{best_top_10}
-                )
-
-                if args.in_batch:
-                    self.save_embedding(
-                        args.save_pickle_path + "_epoch_{}.bin".format(epoch)
-                    )
-
-            if not args.in_batch and epoch != args.num_train_epochs:
-
-                ## get negative samples from dense top k
-                self.save_embedding(
-                    args.save_pickle_path + "_epoch_{}.bin".format(epoch)
-                )
-
-                train_dataset = TrainRetrievalNegativeDatasetDenseTopk(
-                    args.tokenizer_name,
-                    args.dataset_name,
-                    num_neg,
-                    args.context_path,
-                    q_encoder,
-                    save_pickle_path_full,
-                )
-                train_dataloader = DataLoader(
-                    train_dataset, shuffle=True, batch_size=batch_size
-                )
+                            for k in top:
+                                if idx < k:
+                                    top[k] += 1
+                                    if k == 100:
+                                        check = True
+                            if check:
+                                break
+            print("-"*20," validation set accuracy ", "-"*20)
+            for k in top:
+                top[k] /= len(val_data)
+                print(f"for top-{k} acc : {top[k]}")
+            for k in top:
+                if top[k] > best_top[k]:
+                    best_top[k] = top[k]
+            p_encoder.save_pretrained(
+                save_directory=f"{args.save_path_p}/epoch{epoch}"
+            )
+            q_encoder.save_pretrained(
+                save_directory=f"{args.save_path_q}/epoch{epoch}"
+            )
+        print("all done!!", '-'*40)
+        for k in best_top:
+            print(f"for best_top-{k} acc : {best_top[k]}")
 
 
 if __name__ == "__main__":
@@ -352,7 +316,7 @@ if __name__ == "__main__":
         "--save_path_p", default="./encoder/p_encoder", type=str, help=""
     )
     parser.add_argument(
-        "--dataset_name", default="../../data/train_dataset", type=str, help=""
+        "--dataset_name", default="/opt/ml/final-project-level3-nlp-11/data/MODEL/pair.json", type=str, help=""
     )
     parser.add_argument(
         "--tokenizer_name",
@@ -361,16 +325,17 @@ if __name__ == "__main__":
         help="",
     )
     parser.add_argument(
-        "--context_path",
-        default="../../data/wikipedia_documents.json",
-        type=str,
-        help="context for retrieval",
+        "--token_length",
+        default=1024,
+        type=int,
+        help="",
     )
+
     parser.add_argument(
         "--run_name", default="dense_retrieval", type=str, help="wandb run name"
     )
     parser.add_argument(
-        "--num_train_epochs", default=1, type=int, help="number of epochs for train"
+        "--num_train_epochs", default=20, type=int, help="number of epochs for train"
     )
     parser.add_argument(
         "--batch_size", default=2, type=int, help="batch size for train"
@@ -380,9 +345,6 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--weight_decay", default=0.01, type=float, help="weight decay coeff for train"
-    )
-    parser.add_argument(
-        "--num_neg", default=3, type=int, help="number of negative samples for training"
     )
     parser.add_argument(
         "--random_seed", default=211, type=int, help="random seed for numpy and torch"
@@ -401,7 +363,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--save_pickle_path",
-        default="../../data/dense_embedding.bin",
+        default="/opt/ml/final-project-level3-nlp-11/data/MODEL/dense_embedding.bin",
         type=str,
         help="wiki embedding save path",
     )
@@ -437,9 +399,6 @@ if __name__ == "__main__":
     set_seed(args.random_seed)
     torch.cuda.manual_seed(args.random_seed)
 
-    get_preprocess_dataset("../../../data/")
-    get_preprocess_wiki("../../../data/")
-
     p_encoder = AutoModel.from_pretrained(args.p_enc_name_or_path).cuda()
     q_encoder = AutoModel.from_pretrained(args.q_enc_name_or_path).cuda()
 
@@ -447,9 +406,8 @@ if __name__ == "__main__":
 
     retriever = DenseRetrieval(
         args,
-        args.num_neg,
         p_encoder,
         q_encoder,
     )
     retriever.train()
-    retriever.save_embedding(args.save_pickle_path + ".bin")
+    #retriever.save_embedding(args.save_pickle_path + ".bin")

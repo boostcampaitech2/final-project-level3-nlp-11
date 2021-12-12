@@ -51,7 +51,6 @@ class DenseRetrieval:
                     for pair in location_list[area]['관광지'][location]:
                         self.contexts.append(pair['context'])
                         self.places.append(location)
-        
         torch.cuda.empty_cache()
     
     def get_embedding(self):
@@ -64,6 +63,8 @@ class DenseRetrieval:
             print("Embedding pickle load.")
         else:
             print("Embedding pickle is not existed")
+            print("save_embedding() exec")
+            self.save_embedding(emd_path)
     
     def save_embedding(self, save_path: str):
         contexts = self.contexts
@@ -91,7 +92,7 @@ class DenseRetrieval:
         print("Embedding pickle saved.")
         
     def inference(self, query_or_dataset, topk=5):
-        assert self.p_embedding is not None
+        self.get_embedding()
         doc_scores, doc_indices = self.get_relevant_doc(
             single_query, k=topk
         )

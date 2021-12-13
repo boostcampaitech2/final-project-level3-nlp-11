@@ -5,7 +5,9 @@ from src.crawling.blog_crawling import Crawling_naver
 from src.crawling.cafe_crawling import CafeCrawling
 from src.crawling.scrapper import Google_crawling
 from src.preprocess.preprocess_blog import PreprocessBlog
+from src.preprocess.preprocess_google import PreprocessGoogle
 from src.crawling.utils.csv_to_json import CsvToJson
+from src.mk_pair.mk_pair import MkPair
 
 
 def main(args):
@@ -18,13 +20,12 @@ def main(args):
     # blog,google,caf 데이터 전처리
     if args.run_preprocess:
         PreprocessBlog(args)
-
-    # google to json
-    CsvToJson(args)
+        CsvToJson(args)
+        PreprocessGoogle(args)
 
     if args.run_mk_pair:
-        pass
-        # make pair
+        MkPair(args)
+
     return
 
 
@@ -39,17 +40,6 @@ if __name__ == "__main__":
             config = configparser.SafeConfigParser()
             config.read([args.config_file])
 
-    parser.add_argument("--start_state", type=str, default="서울", help="set start_point")
-    parser.add_argument("--start_type", type=str, default="관광지", help="set start_point")
-    parser.add_argument(
-        "--start_location", type=str, default="간데메공원", help="set start_point"
-    )
-    parser.add_argument(
-        "--use_start_point",
-        type=bool,
-        default=False,
-        help="use start_point",
-    )
     parser.add_argument(
         "--name_path",
         type=str,
@@ -57,50 +47,13 @@ if __name__ == "__main__":
         help="original name file name",
     )
     parser.add_argument(
-        "--info_path", type=str, default="test_info.json", help="new info file name"
+        "--info_path", type=str, default="info.json", help="new info file name"
     )
     parser.add_argument(
         "--result_path",
         type=str,
-        default="test_result.json",
+        default="result.json",
         help="new result file name",
-    )
-    parser.add_argument(
-        "--driver_path",
-        type=str,
-        default="src/crawling/utils/chromedriver",
-        help="chromedriver_path",
-    )
-    parser.add_argument(
-        "--num", default=7, type=int, help="An number for seperating task"
-    )
-
-    for k, v in config.items("crawling"):
-        parser.parse_args([str(k), str(v)], args)
-
-    parser.add_argument(
-        "--input_result",
-        type=str,
-        default="result_latest.json",
-        help="input_result",
-    )
-    parser.add_argument(
-        "--input_info",
-        type=str,
-        default="info_latest.json",
-        help="input_info",
-    )
-    parser.add_argument(
-        "--output_result",
-        type=str,
-        default="result_prepro.json",
-        help="output_result",
-    )
-    parser.add_argument(
-        "--output_info",
-        type=str,
-        default="info_prepro.json",
-        help="output_info",
     )
 
     parser.add_argument(
@@ -117,7 +70,82 @@ if __name__ == "__main__":
         help="output_json_file_name",
     )
 
+    parser.add_argument(
+        "--output_result",
+        type=str,
+        default="result_prepro.json",
+        help="output_result",
+    )
+
+    parser.add_argument(
+        "--output_info",
+        type=str,
+        default="info_prepro.json",
+        help="output_info",
+    )
+    parser.add_argument(
+        "--output_google",
+        type=str,
+        default="google_prepro.json",
+        help="output_google",
+    )
+
+    parser.add_argument(
+        "--output_pair",
+        type=str,
+        default="pair.json",
+        help="output_pair",
+    )
+
+    parser.add_argument(
+        "--output_pair_info",
+        type=str,
+        default="pair_info.json",
+        help="output_pair_info",
+    )
+
+    for k, v in config.items("file_name"):
+        parser.parse_args([str(k), str(v)], args)
+
+    parser.add_argument("--start_state", type=str, default="서울", help="set start_point")
+    parser.add_argument("--start_type", type=str, default="관광지", help="set start_point")
+    parser.add_argument(
+        "--start_location", type=str, default="간데메공원", help="set start_point"
+    )
+    parser.add_argument(
+        "--use_start_point",
+        type=bool,
+        default=False,
+        help="use start_point",
+    )
+    parser.add_argument(
+        "--driver_path",
+        type=str,
+        default="src/crawling/utils/chromedriver",
+        help="chromedriver_path",
+    )
+    parser.add_argument(
+        "--num", default=7, type=int, help="An number for seperating task"
+    )
+
+    for k, v in config.items("crawling"):
+        parser.parse_args([str(k), str(v)], args)
+
+    parser.add_argument(
+        "--minimum_blog_reviews", type=int, default=100, help="minimum_blog_reviews"
+    )
+    parser.add_argument(
+        "--minimun_google_rating", type=int, default=3, help="minimun_google_rating"
+    )
+
     for k, v in config.items("preprocess"):
+        parser.parse_args([str(k), str(v)], args)
+
+    parser.add_argument(
+        "--minimun_pair_num", type=int, default=5, help="minimun_pair_num"
+    )
+
+    for k, v in config.items("mkpair"):
         parser.parse_args([str(k), str(v)], args)
 
     parser.add_argument(

@@ -17,9 +17,9 @@ class PreprocessBlog:
     def get_data(self, args):
         print("------------------READ DATA FILE ------------------")
         file_path = os.getenv("DATA_GEN_DATA_PATH")
-        with open(file_path + args.input_result, "r", encoding="utf-8-sig") as f:
+        with open(file_path + args.result_path, "r", encoding="utf-8-sig") as f:
             data = json.load(f)
-        with open(file_path + args.input_info, "r", encoding="utf-8-sig") as f:
+        with open(file_path + args.info_path, "r", encoding="utf-8-sig") as f:
             info = json.load(f)
         print("------------------FIN READ DATA FILE ------------------")
         return data, info
@@ -36,14 +36,20 @@ class PreprocessBlog:
                     result[state][types] = {}
                     result_info[state][types] = {}
                 for location in info[state][types].keys():
-                    if info[state][types][location]["total"] < 100:
+                    if (
+                        info[state][types][location]["total"]
+                        < args.minimum_blog_reviews
+                    ):
                         continue
                     if not location in result[state][types]:
                         result[state][types][location] = []
                         result_info[state][types][location] = {}
 
                     for i in data[state][types][location]:
-                        i["context"] = ReplaceText().get_convert_text(i["context"])
+                        context = ReplaceText().get_convert_text(i["context"])
+                        if not context:
+                            continue
+                        i["context"] = context
                         result[state][types][location].append(i)
                     result_info[state][types][location] = info[state][types][location]
 

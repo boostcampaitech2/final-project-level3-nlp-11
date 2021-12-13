@@ -135,6 +135,9 @@ if __name__ == "__main__":
         "--minimum_blog_reviews", type=int, default=100, help="minimum_blog_reviews"
     )
     parser.add_argument(
+        "--minimun_blog_length", type=int, default=100, help="minimun_blog_length"
+    )
+    parser.add_argument(
         "--minimun_google_rating", type=int, default=3, help="minimun_google_rating"
     )
 

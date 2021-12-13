@@ -49,6 +49,8 @@ class PreprocessBlog:
                         context = ReplaceText().get_convert_text(i["context"])
                         if not context:
                             continue
+                        if len(context) < args.minimun_blog_length:
+                            continue
                         i["context"] = context
                         result[state][types][location].append(i)
                     result_info[state][types][location] = info[state][types][location]

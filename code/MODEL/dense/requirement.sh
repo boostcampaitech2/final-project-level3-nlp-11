@@ -1,0 +1,1 @@
+pip install torch==1.10.0

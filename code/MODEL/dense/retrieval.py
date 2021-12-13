@@ -92,7 +92,7 @@ class DenseRetrieval:
             pickle.dump(p_embedding, file)
         print("Embedding pickle saved.")
         
-    def inference(self, query_or_dataset, topk=5):
+    def inference(self, single_query, topk=5):
         if self.p_embedding == None:
             self.get_embedding()
         doc_scores, doc_indices = self.get_relevant_doc(
@@ -102,13 +102,13 @@ class DenseRetrieval:
         for i in range(topk):
             print(f"Top-{i+1} passage with score {doc_scores[i]:4f}")
             print('Content name :', self.places[doc_indices[i]])
-            print('Contexts :', self.contextx[doc_indices[i]])
+            print('Contexts :', self.contexts[doc_indices[i]])
             tmp = {
                 # Retrieve한 Passage의 id, context를 반환합니다.
                 "rank": i,
-                "scores": doc_scores[idx],
+                "scores": doc_scores[i],
                 "place": self.places[doc_indices[i]],
-                "context_id": doc_indices[idx],
+                "context_id": doc_indices[i],
                 "context": self.contexts[doc_indices[i]]
             }
             total.append(tmp)
@@ -123,7 +123,7 @@ class DenseRetrieval:
             q_encoder.eval()
             print('getting Query X Passage scores')
             q = tokenizer(
-                query, max_length=self.args.max_length, padding="max_length", truncation=True, return_tensors="pt"
+                query, max_length=self.args.token_length, padding="max_length", truncation=True, return_tensors="pt"
             ).to("cuda")
             q_emb = q_encoder(**q).pooler_output.to("cpu").detach().numpy()
 

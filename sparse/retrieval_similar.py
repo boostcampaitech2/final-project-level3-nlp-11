@@ -6,18 +6,11 @@ import pickle
 import numpy as np
 import pandas as pd
 
-from typing import Optional, NoReturn, List, Tuple
+from typing import Optional, NoReturn, List, Tuple, Set
 
 from transformers import AutoTokenizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from contextlib import contextmanager
-
-# @contextmanager
-# def timer(name):
-#     t0 = time.time()
-#     yield
-#     print(f"[{name}] done in {time.time() - t0:.3f} s")
 
 class SimilarSparse:
     def __init__(
@@ -32,65 +25,70 @@ class SimilarSparse:
         )
         self.tfidfv = TfidfVectorizer(
             tokenizer=tokenizer.tokenize,
-            ngram_range=(1, 2), 
+            ngram_range=(1, 2),
         )
-        
+
         self.data_path = data_path
         self.json_name = json_name
-        
+
         self.json_to_list()
-        
-        
-    def json_to_list(self, area: Optional[str] = None):
-        '''
+
+    def json_to_list(self):
+        """
         Return : list of contexts and contents
         Only for content type of '관광지'
-        '''
-        with open(os.path.join(self.data_path, self.json_name), "r", encoding="utf-8-sig") as f:
+        """
+        with open(
+            os.path.join(self.data_path, self.json_name), "r", encoding="utf-8-sig"
+        ) as f:
             tour_json = json.load(f)
 
         tour_context = []
         tour_content = []
+        tour_area_idx = {}  ##area:[start_idx, end_idx]
 
-        if area:
-            loc_list = list(tour_json[area]['관광지'].keys())
+        area_list = list(tour_json.keys())
+        cnt_idx = 0
+        for area in area_list:
+            loc_list = list(tour_json[area]["관광지"].keys())
+            tour_area_idx[area] = [cnt_idx]  ##start idx
 
             for loc in loc_list:
-                pairs = tour_json[area]['관광지'][loc]
-                for pair in pairs:
-                    tour_context.append(pair['context'])
-                    tour_content.append(loc)
+                pairs = tour_json[area]["관광지"][loc]
 
-        else:
-            area_list = list(tour_json.keys())
-            for area in area_list:
-                loc_list = list(tour_json[area]['관광지'].keys())
-                for loc in loc_list:
-                    pairs = tour_json[area]['관광지'][loc]
-                    for pair in pairs:
-                        tour_context.append(pair['context'])
-                        tour_content.append(loc)
+                for pair in pairs:
+                    tour_context.append(pair["context"])
+                    tour_content.append(loc)
+                    cnt_idx += 1
+
+            tour_area_idx[area].append(cnt_idx)  ##end idx
 
         self.contexts = tour_context
         self.contents = tour_content
+        self.area_idx = tour_area_idx
 
-    def get_precision(self, query, content):
-        '''
+    def get_precision(self, query, content) -> float:
+        """
         Input
         Output
-        '''
-        query = query.replace(' ','')
-        content = content.replace(' ','')
+        """
+        query = query.replace(" ", "")
+        content = content.replace(" ", "")
 
         cnt = 0
         for char in query:
             if char in content:
                 cnt += 1
         return cnt / len(query)
-    
-    def get_query_contexts(self, query):
+
+    def get_query_contexts(self, query) -> bool:
+        """
+        return True : found matching content.
+        return False : there's no matching content, use query as a sentence to dense.
+        """
         ### Get matched content over 0.8 precision score
         top_score = 0
+        chosen = False
         for content in set(self.contents):
             prec_score = self.get_precision(query, content)
             if prec_score > 0.8 and prec_score > top_score:
@@ -98,14 +96,21 @@ class SimilarSparse:
                 chosen = content
         ### Get matched content over 0.8 precision score
 
+        ### Nothing matches
+        if not chosen:
+            return chosen
+        ### Nothing matches
+
         ### Get context of content
         chosen_idx = self.contents.index(chosen)
-        chosen_context = self.contexts[chosen_idx:chosen_idx + 5]
+        chosen_context = self.contexts[chosen_idx : chosen_idx + 5]
         ### Get context of content
-        
+
         self.query_idx = chosen_idx
         self.query_contexts = chosen_context
-    
+
+        return True
+
     def get_sparse_embedding(self) -> NoReturn:
 
         """
@@ -136,26 +141,29 @@ class SimilarSparse:
             with open(tfidfv_path, "wb") as file:
                 pickle.dump(self.tfidfv, file)
             print("Embedding pickle saved.")
-            
-    def retrieve(self, query_contexts: List, topk: int) -> pd.DataFrame:
 
-        doc_scores, doc_indices = self.get_relevant_doc_bulk(
-            query_contexts, k=topk
+    def retrieve(
+        self, query_contexts: List, topk: int, area: Optional[str] = None
+    ) -> Set[str]:
+
+        doc_scores, doc_indices, contents_exc = self.get_relevant_doc_bulk(
+            query_contexts, k=topk, area=area
         )
         result_contents = set()
         break_idx = 0
-        
+
         for rank_idx in range(topk):
             for idx in range(len(query_contexts)):
-                result_contents.add(self.contents[doc_indices[idx][rank_idx]])
+                result_contents.add(contents_exc[doc_indices[idx][rank_idx]])
+
                 if len(result_contents) == topk:
                     break_idx = 1
                     break
             if break_idx == 1:
                 break
-                
+
         return result_contents
-        
+
         # ## For TEST
         # total = []
         # for idx in range(len(query_contexts)):
@@ -170,10 +178,9 @@ class SimilarSparse:
         # ## For TEST
         # return cqas # for TEST
 
-    
     def get_relevant_doc_bulk(
-        self, queries: List, k: Optional[int] = 1
-    ) -> Tuple[List, List]:
+        self, queries: List, k: Optional[int] = 1, area: Optional[str] = None
+    ) -> Tuple[List, List, List]:
 
         """
         Arguments:
@@ -193,29 +200,37 @@ class SimilarSparse:
         result = query_vec * self.p_embedding.T
         if not isinstance(result, np.ndarray):
             result = result.toarray()
-            
-        ## exclude query indices
-        delete_idx = list(range(self.query_idx, self.query_idx + 5))
-        result = np.delete(result, delete_idx, 1)
-        ## exclude query idices
-        
+
+        ## getting area indices, exclude query indices
+        start_idx = self.area_idx[area][0]
+        end_idx = self.area_idx[area][1]
+        area_indices = list(range(start_idx, end_idx))
+
+        result = np.take(result, area_indices, 1)
+        contents_exc = np.array(self.contents)
+        contents_exc = np.take(contents_exc, area_indices, 0)
+
+        if self.query_idx in area_indices:
+            start_query_idx = self.query_idx - start_idx
+            delete_idx = list(range(start_query_idx, start_query_idx + 5))
+
+            result = np.delete(result, delete_idx, 1)
+            contents_exc = np.delete(contents_exc, delete_idx, 0)
+        ## getting area indices, exclude query indices
+
         doc_scores = []
         doc_indices = []
         for i in range(result.shape[0]):
-            ## Search for all area
-            sorted_result = np.argsort(result[i])[::-1]#Sorting Indices
+            ## sort for top k
+            sorted_result = np.argsort(result[i])[::-1]  # Sorting Indices
 
             doc_scores.append(result[i, :][sorted_result].tolist()[:k])
             doc_indices.append(sorted_result.tolist()[:k])
-            ## Search for all area
-            
-            ## Search for specific area
-            
-            ## Search for specific area
-            
-        return doc_scores, doc_indices
-    
-    
+            ## sort for top k
+
+        return doc_scores, doc_indices, contents_exc
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="")
     parser.add_argument(
@@ -224,9 +239,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--json_name", default="pair.json", type=str, help="json dataset path"
     )
-    parser.add_argument(
-        "--topk", default=5, type=int, help="number of k for top-k"
-    )
+    parser.add_argument("--topk", default=5, type=int, help="number of k for top-k")
     parser.add_argument(
         "--pre_tokenizer",
         default="klue/bert-base",
@@ -234,37 +247,39 @@ if __name__ == "__main__":
         help="transformer's model name for tokenizer",
     )
     args = parser.parse_args()
-    
+
     t0 = time.time()
-    
-    query = '효자동골목'
+
+    query = "효자동"
+    area = "경상남도"
     retriever = SimilarSparse(
         args.pre_tokenizer,
         data_path=args.data_path,
         json_name=args.json_name,
     )
-
-    retriever.get_query_contexts(query)
     retriever.get_sparse_embedding()
-    result_df = retriever.retrieve(retriever.query_contexts, 5)
-    
-#     ## TEST
-#     tour_context = retriever.contexts
-#     tour_content = retriever.contents
-    
-#     chosen_idx = retriever.query_idx
-#     chosen_contexts = retriever.query_contexts
-    
-#     print(len(tour_context), len(tour_content))
-#     print(len(set(tour_content)))
-#     print(tour_content[chosen_idx:chosen_idx + 5])
-    
-#     print(retriever.contents[retriever.query_idx])
-#     print(result_df)
-#     ## TEST
-    
+
+    true_false = retriever.get_query_contexts(query)
+    if not true_false:
+        print("No Matches, Run dense with query")
+        exit()
+    else:
+        result_contents = retriever.retrieve(retriever.query_contexts, 5, area)
+
+    #     ## TEST
+    #     tour_context = retriever.contexts
+    #     tour_content = retriever.contents
+
+    #     chosen_idx = retriever.query_idx
+    #     chosen_contexts = retriever.query_contexts
+
+    #     print(len(tour_context), len(tour_content))
+    #     print(len(set(tour_content)))
+    #     print(tour_content[chosen_idx:chosen_idx + 5])
+    #     ## TEST
+
     ## RESULT
     print(retriever.contents[retriever.query_idx])
-    print(result_df)
+    print(result_contents)
     print(time.time() - t0)
     ## RESULT

@@ -55,7 +55,7 @@ class DenseRetrieval:
         torch.cuda.empty_cache()
     
     def get_embedding(self):
-        emd_path = self.pickle_path
+        emd_path = self.args.save_pickle_path
 
         if os.path.isfile(emd_path):
             with open(emd_path, "rb") as file:

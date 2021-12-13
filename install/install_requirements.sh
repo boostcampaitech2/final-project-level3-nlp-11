@@ -1,8 +1,5 @@
 #!/bin/bash
 
-<<<<<<< Updated upstream
-pip install python-dotenv==0.19.2
-=======
 # data crawling
 pip install python-dotenv==0.19.2
 python3 -m pip install selenium
@@ -18,4 +15,3 @@ pip install torch==1.10.0
 pip install torchvision==0.11.1
 pip install efficientnet-pytorch==0.7.1
 pip install PyYAML==6.0
->>>>>>> Stashed changes

@@ -30,12 +30,20 @@ class Crawling_naver:
         print(f"runtime: {now - start:.2f}")
 
     def mk_file(self, type_list, file_path, start_point, args):
-        with open(file_path + args.name_path, "r", encoding="utf-8-sig") as f:
-            try:
-                tour_name = json.load(f)
-            except:
-                print("error need tour_spot_name data")
-                exit(1)
+        if args.use_start_point:
+            with open(file_path + args.result_path, "r", encoding="utf-8-sig") as f:
+                try:
+                    tour_name = json.load(f)
+                except:
+                    print("error need tour_spot_name data")
+                    exit(1)
+        else:
+            with open(file_path + args.name_path, "r", encoding="utf-8-sig") as f:
+                try:
+                    tour_name = json.load(f)
+                except:
+                    print("error need tour_spot_name data")
+                    exit(1)
         if not os.path.isfile(file_path + args.info_path):
             f = open(file_path + args.info_path, "w")
             f.close()
@@ -177,26 +185,3 @@ class Crawling_naver:
     def get_context(self, url):
         response = RequestBlog().get(url)
         return BlogParser(response, url).get_result()
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--start_state", type=str, default="서울", help="set start_point")
-    parser.add_argument("--start_type", type=str, default="관광지", help="set start_point")
-    parser.add_argument(
-        "--start_location", type=str, default="간데메공원", help="set start_point"
-    )
-    parser.add_argument(
-        "--use_start_point", type=bool, default=False, help="use start_point"
-    )
-    parser.add_argument(
-        "--name_path", type=str, default="tour_spot_name.json", help="set start_point"
-    )
-    parser.add_argument(
-        "--info_path", type=str, default="test_info.json", help="set start_point"
-    )
-    parser.add_argument(
-        "--result_path", type=str, default="test_result.json", help="set start_point"
-    )
-    args = parser.parse_args()
-    Crawling_naver(args)

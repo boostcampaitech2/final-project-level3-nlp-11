@@ -201,7 +201,7 @@ class SimilarSparse:
         if not isinstance(result, np.ndarray):
             result = result.toarray()
         ## search for whole area
-        if not area:
+        if area == '전국':
             delete_idx = list(range(self.query_idx, self.query_idx + 5))
             result = np.delete(result, delete_idx, 1)
             contents_exc = np.array(self.contents)
@@ -259,7 +259,7 @@ if __name__ == "__main__":
     t0 = time.time()
 
     query = "해운대온천"
-    area = None
+    area = '전국'
     retriever = SimilarSparse(
         args.pre_tokenizer,
         data_path=args.data_path,

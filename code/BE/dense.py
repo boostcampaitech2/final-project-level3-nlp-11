@@ -147,21 +147,3 @@ class DenseRetrieval:
         return self.p_embedding[result_emb_list], result_emb_list
         
     
-def TrainInbatchDatasetJson(tokenizer, dataset: Dataset, max_length:int) -> TensorDataset:
-    print("get in-batch training sample")
-
-    p_seqs = tokenizer(
-        dataset["context"], max_length=max_length ,padding="max_length", truncation=True, return_tensors="pt"
-    )
-    q_seqs = tokenizer(
-        dataset["query"], max_length=max_length, padding="max_length", truncation=True, return_tensors="pt"
-    )
-
-    return TensorDataset(
-        p_seqs["input_ids"],
-        p_seqs["attention_mask"],
-        p_seqs["token_type_ids"],
-        q_seqs["input_ids"],
-        q_seqs["attention_mask"],
-        q_seqs["token_type_ids"],
-    )

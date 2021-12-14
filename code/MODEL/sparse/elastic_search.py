@@ -23,14 +23,14 @@ class ElasticSearch:
             self.insert_data_to_elastic()
     
     def get_place_data(self):
-        with open(f'{self.dir_path}/data/MODEL/blog.json', "r", encoding='utf-8-sig') as f:
+        with open(f'{self.dir_path}/data/MODEL/pair.json', "r", encoding='utf-8-sig') as f:
             blog_info = json.load(f)
             self.contexts = []
             for area in blog_info:
-                for theme in blog_info[area]:
-                    for place in blog_info[area][theme]:
-                        context = blog_info[area][theme][place]["context"]
-                        self.contexts.append({'context':context, 'place':place})
+                for location in blog_info[area]['관광지']:
+                    for pair in blog_info[area]['관광지'][location]:
+                        context = pair["context"]
+                        self.contexts.append({'context':context, 'place':location})
 
     def set_elastic_server(self):
         path_to_elastic = f"{self.dir_path}/code/MODEL/sparse/elasticsearch-7.9.2/bin/elasticsearch"
@@ -109,21 +109,17 @@ class ElasticSearch:
         result = self.es.search(index=self.index_name, body=query, size=k)
         return result["hits"]["hits"]
 
-    def run_retrieval(self, q_dataset: Dataset, topk: int=10) -> DatasetDict:
+    def run_retrieval(self, describe: str, topk: int=50) -> DatasetDict:
         results = []
         for idx, q_data in enumerate(q_dataset):
             describe = q_data["describe"]
             passages = self.get_top_k_passages(describe=describe, k=topk)
             examples = [{"context": passages[i]["_source"]["context"], "place":passages[i]["_source"]["place"], "query": describe, "score":passages[i]["_score"]} for i in range(len(passages))]
             results.extend(examples)
-        f = Features(
-            {
-                "context": Value(dtype="string", id=None),
-                "place": Value(dtype="string", id=None),
-                "query": Value(dtype="string", id=None),
-                "score": Value(dtype="float", id=None),
-            }
-        )
+
+        passages = self.get_top_k_passages(describe=describe, k=topk)
+        results = [{"id":int(passages[i]["_id"]), "context": passages[i]["_source"]["context"], "place":passages[i]["_source"]["place"], "score":passages[i]["_score"]} for i in range(len(passages))]
+
         df = pd.DataFrame(results)
 
-        return DatasetDict({"train": Dataset.from_pandas(df, features=f)})
+        return df

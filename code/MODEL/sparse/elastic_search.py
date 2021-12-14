@@ -26,11 +26,13 @@ class ElasticSearch:
         with open(f'{self.dir_path}/data/MODEL/pair.json', "r", encoding='utf-8-sig') as f:
             blog_info = json.load(f)
             self.contexts = []
+            i = 0
             for area in blog_info:
                 for location in blog_info[area]['관광지']:
                     for pair in blog_info[area]['관광지'][location]:
                         context = pair["context"]
-                        self.contexts.append({'context':context, 'place':location})
+                        self.contexts.append({'context':context, 'place':location, 'doc_id': i})
+                        i += 1
 
     def set_elastic_server(self):
         path_to_elastic = f"{self.dir_path}/code/MODEL/sparse/elasticsearch-7.9.2/bin/elasticsearch"
@@ -84,6 +86,7 @@ class ElasticSearch:
                     "properties": {
                         "context": {"type": "text", "analyzer": "nori_analyzer"},
                         "place": {"type": "text", "analyzer": "nori_analyzer"},
+                        "doc_id": {"type": "text"},
                     },
                 },
             }
@@ -113,7 +116,7 @@ class ElasticSearch:
         results = []
 
         passages = self.get_top_k_passages(describe=describe, k=topk)
-        results = [{"id":int(passages[i]["_id"]), "context": passages[i]["_source"]["context"], "place":passages[i]["_source"]["place"], "score":passages[i]["_score"]} for i in range(len(passages))]
+        results = [{"id":int(passages[i]["_source"]["doc_id"]), "context": passages[i]["_source"]["context"], "place":passages[i]["_source"]["place"], "score":passages[i]["_score"]} for i in range(len(passages))]
 
         df = pd.DataFrame(results)
 

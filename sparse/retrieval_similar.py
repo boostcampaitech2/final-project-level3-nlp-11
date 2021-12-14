@@ -200,22 +200,30 @@ class SimilarSparse:
         result = query_vec * self.p_embedding.T
         if not isinstance(result, np.ndarray):
             result = result.toarray()
-
-        ## getting area indices, exclude query indices
-        start_idx = self.area_idx[area][0]
-        end_idx = self.area_idx[area][1]
-        area_indices = list(range(start_idx, end_idx))
-
-        result = np.take(result, area_indices, 1)
-        contents_exc = np.array(self.contents)
-        contents_exc = np.take(contents_exc, area_indices, 0)
-
-        if self.query_idx in area_indices:
-            start_query_idx = self.query_idx - start_idx
-            delete_idx = list(range(start_query_idx, start_query_idx + 5))
-
+        ## search for whole area
+        if not area:
+            delete_idx = list(range(self.query_idx, self.query_idx + 5))
             result = np.delete(result, delete_idx, 1)
+            contents_exc = np.array(self.contents)
             contents_exc = np.delete(contents_exc, delete_idx, 0)
+        ## search for whole area
+        
+        ## getting area indices, exclude query indices
+        else:
+            start_idx = self.area_idx[area][0]
+            end_idx = self.area_idx[area][1]
+            area_indices = list(range(start_idx, end_idx))
+
+            result = np.take(result, area_indices, 1)
+            contents_exc = np.array(self.contents)
+            contents_exc = np.take(contents_exc, area_indices, 0)
+
+            if self.query_idx in area_indices:
+                start_query_idx = self.query_idx - start_idx
+                delete_idx = list(range(start_query_idx, start_query_idx + 5))
+
+                result = np.delete(result, delete_idx, 1)
+                contents_exc = np.delete(contents_exc, delete_idx, 0)
         ## getting area indices, exclude query indices
 
         doc_scores = []
@@ -250,8 +258,8 @@ if __name__ == "__main__":
 
     t0 = time.time()
 
-    query = "효자동"
-    area = "경상남도"
+    query = "해운대온천"
+    area = None
     retriever = SimilarSparse(
         args.pre_tokenizer,
         data_path=args.data_path,

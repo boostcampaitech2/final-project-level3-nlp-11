@@ -111,11 +111,6 @@ class ElasticSearch:
 
     def run_retrieval(self, describe: str, topk: int=50) -> DatasetDict:
         results = []
-        for idx, q_data in enumerate(q_dataset):
-            describe = q_data["describe"]
-            passages = self.get_top_k_passages(describe=describe, k=topk)
-            examples = [{"context": passages[i]["_source"]["context"], "place":passages[i]["_source"]["place"], "query": describe, "score":passages[i]["_score"]} for i in range(len(passages))]
-            results.extend(examples)
 
         passages = self.get_top_k_passages(describe=describe, k=topk)
         results = [{"id":int(passages[i]["_id"]), "context": passages[i]["_source"]["context"], "place":passages[i]["_source"]["place"], "score":passages[i]["_score"]} for i in range(len(passages))]

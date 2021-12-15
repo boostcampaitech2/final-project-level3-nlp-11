@@ -18,29 +18,32 @@ from transformers import (
     AutoTokenizer,
 )
 
-# code/MODEL/sparse/elastic_search.py
-from elastic_search import *
+# /opt/ml/final-project-level3-nlp-11/code/MODEL/sparse/elastic_search.py
+sys.path.append("/opt/ml/final-project-level3-nlp-11/code/MODEL/sparse")
+from elastic_search import ElasticSearch
 
 class DenseRetrieval:
     def __init__(
         self,
-        p_encoder_path:str,
-        q_encoder_path:str,
+        p_encoder_model:str,
+        q_encoder_model:str,
         tokenizer_name:str,
         pickle_path:str,
         token_length:int,
         es:ElasticSearch,
     ) -> None:
-        self.p_encoder = AutoModel.from_pretrained(p_encoder_path)
-        self.q_encoder = AutoModel.from_pretrained(q_encoder_path)
+        self.p_encoder = AutoModel.from_pretrained(p_encoder_model)
+        self.q_encoder = AutoModel.from_pretrained(q_encoder_model)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.tokenizer = AutoTokenizer.from_pretrained(self.tokenizer_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
         self.es = es
+        self.pickle_path = pickle_path
+        self.token_length = token_length
         
         self.p_embedding = None
         self.contexts = []
         self.places = []
-        with open(self.args.dataset_name, "r", encoding="utf-8-sig") as f:
+        with open("../../data/pair.json", "r", encoding="utf-8-sig") as f:
             location_list = json.load(f)
             for area in location_list:
                 for location in location_list[area]['관광지']:
@@ -71,11 +74,10 @@ class DenseRetrieval:
 
         with torch.no_grad():
             p_encoder.eval()
-
             for p in tqdm(contexts):
                 p = tokenizer(
                     p, padding="max_length", max_length=self.token_length, truncation=True, return_tensors="pt"
-                ).to("cuda")
+                ).to(self.device)
                 p_emb = p_encoder(**p).pooler_output.to("cpu").detach().numpy()
                 p_embs.append(p_emb)
 
@@ -113,14 +115,14 @@ class DenseRetrieval:
     def get_relevant_doc(self, query: str, k = 5):
         q_encoder = self.q_encoder
         q_embs = []
-        p_embs, p_embs_index_list = es_run_retrieval(query)
+        p_embs, p_embs_index_list = self.es_run_retrieval(query)
 
         with torch.no_grad():
             q_encoder.eval()
             print('getting Query X Passage scores')
-            q = tokenizer(
+            q = self.tokenizer(
                 query, max_length=self.token_length, padding="max_length", truncation=True, return_tensors="pt"
-            ).to("cuda")
+            ).to(self.device)
             q_emb = q_encoder(**q).pooler_output.to("cpu").detach().numpy()
 
         # result = q_emb * self.p_embedding.T
@@ -146,4 +148,16 @@ class DenseRetrieval:
             result_emb_list.append(context_id)
         return self.p_embedding[result_emb_list], result_emb_list
         
-    
+
+if __name__ == '__main__':
+    """ test code 
+        실행하기 전, elasticsearch.sh를 먼저 실행해주세요
+        pair.json의 위치를 /data/ 로 해주세요 
+        pickle_path를 파일명으로 지정해주세요
+        """
+    es = ElasticSearch()
+    base_model = "klue/bert-base"
+    retrieval = DenseRetrieval(p_encoder_model=base_model, q_encoder_model=base_model, tokenizer_name=base_model, pickle_path="../MODEL/embedding/embedding.pkl", token_length=128, es=es)
+    query = "기분이 울적할 때 갈만한 곳"
+    result = retrieval.inference(query)
+    result.to_csv("result.csv", index=False)

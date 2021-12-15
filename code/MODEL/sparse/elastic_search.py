@@ -23,7 +23,7 @@ class ElasticSearch:
             self.insert_data_to_elastic()
     
     def get_place_data(self):
-        with open(f'{self.dir_path}/data/MODEL/pair.json', "r", encoding='utf-8-sig') as f:
+        with open(f'{self.dir_path}/data/pair.json', "r", encoding='utf-8-sig') as f:
             blog_info = json.load(f)
             self.contexts = []
             i = 0

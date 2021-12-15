@@ -47,7 +47,9 @@ class SimilarSparse:
         tour_content = []
         tour_area_idx = {}  ##area:[start_idx, end_idx]
 
-        area_list = list(tour_json.keys())
+        area_list = ['서울', '인천', '대구', '부산', '경기도', '강원도', '충청북도', '충청남도', '대전', 
+             '세종특별자치시', '경상북도', '경상남도', '울산', '전라북도', '전라남도', '광주', '제주도']
+        
         cnt_idx = 0
         for area in area_list:
             loc_list = list(tour_json[area]["관광지"].keys())
@@ -62,6 +64,17 @@ class SimilarSparse:
                     cnt_idx += 1
 
             tour_area_idx[area].append(cnt_idx)  ##end idx
+            
+        ## Merge area under 30 contents
+        tour_area_idx['충청남도'][1] = tour_area_idx['세종특별자치시'][1]
+        tour_area_idx['경상남도'][1] = tour_area_idx['울산'][1]
+        tour_area_idx['전라남도'][1] = tour_area_idx['광주'][1]
+
+        del tour_area_idx['대전']
+        del tour_area_idx['세종특별자치시']
+        del tour_area_idx['울산']
+        del tour_area_idx['광주']
+        ## Merge area under 30 contents
 
         self.contexts = tour_context
         self.contents = tour_content
@@ -259,7 +272,7 @@ if __name__ == "__main__":
     t0 = time.time()
 
     query = "해운대온천"
-    area = '전국'
+    area = '전라남도'
     retriever = SimilarSparse(
         args.pre_tokenizer,
         data_path=args.data_path,
@@ -267,6 +280,7 @@ if __name__ == "__main__":
     )
     retriever.get_sparse_embedding()
 
+    t0 = time.time()
     true_false = retriever.get_query_contexts(query)
     if not true_false:
         print("No Matches, Run dense with query")

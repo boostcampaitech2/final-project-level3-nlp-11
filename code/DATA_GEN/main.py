@@ -148,6 +148,13 @@ if __name__ == "__main__":
         "--minimun_pair_num", type=int, default=5, help="minimun_pair_num"
     )
 
+    parser.add_argument(
+        "--clean_tokenizer",
+        type=bool,
+        default=False,
+        help="without Special Characters only korean and english little",
+    )
+
     for k, v in config.items("mkpair"):
         parser.parse_args([str(k), str(v)], args)
 

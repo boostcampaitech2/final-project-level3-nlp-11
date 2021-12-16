@@ -32,9 +32,9 @@ class DenseRetrieval:
         token_length:int,
         es:ElasticSearch,
     ) -> None:
-        self.p_encoder = AutoModel.from_pretrained(p_encoder_model)
-        self.q_encoder = AutoModel.from_pretrained(q_encoder_model)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.p_encoder = AutoModel.from_pretrained(p_encoder_model).to(self.device)
+        self.q_encoder = AutoModel.from_pretrained(q_encoder_model).to(self.device)
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
         self.es = es
         self.pickle_path = pickle_path
@@ -45,37 +45,37 @@ class DenseRetrieval:
         
         torch.cuda.empty_cache()
         
-        def set_contexts(self):
-            self.contexts = []
-            self.places = []
-            self.area_idx = {}
-            with open("../../data/pair.json", "r", encoding="utf-8-sig") as f:
-                location_list = json.load(f)
-                change_area = {"대전" : "충청남도", "세종특별자치시": "충청남도", "울산" : "경상남도", "광주" : "전라남도"}
-                new_area_list = {}
-                for area in location_list:
-                    if area in change_area:
-                        aft_area_name = change_area[area]
-                        if aft_area_name in new_area_list:
-                            new_area_list[aft_area_name].append(area)
-                        else:
-                            new_area_list[aft_area_name] = [area]
+    def set_contexts(self):
+        self.contexts = []
+        self.places = []
+        self.area_idx = {}
+        with open("../../data/pair.json", "r", encoding="utf-8-sig") as f:
+            location_list = json.load(f)
+            change_area = {"대전" : "충청남도", "세종특별자치시": "충청남도", "울산" : "경상남도", "광주" : "전라남도"}
+            new_area_list = {}
+            for area in location_list:
+                if area in change_area:
+                    aft_area_name = change_area[area]
+                    if aft_area_name in new_area_list:
+                        new_area_list[aft_area_name].append(area)
                     else:
-                        if area in new_area_list:
-                            new_area_list[area].append(area)
-                        else:
-                            new_area_list[area] = [area]
-                start_idx = 0
-                end_idx = 0
-                for area_list in new_area_list
-                    for area in new_area_list[area_list]:
-                        for location in location_list[area]['관광지']:
-                            for pair in location_list[area]['관광지'][location]:
-                                self.contexts.append(pair['context'])
-                                self.places.append(location)
-                                end_idx += 1
-                    self.area_idx[area_list] = [start_idx:end_idx]
-                    start_idx = end_idx
+                        new_area_list[aft_area_name] = [area]
+                else:
+                    if area in new_area_list:
+                        new_area_list[area].append(area)
+                    else:
+                        new_area_list[area] = [area]
+            start_idx = 0
+            end_idx = 0
+            for area_list in new_area_list:
+                for area in new_area_list[area_list]:
+                    for location in location_list[area]['관광지']:
+                        for pair in location_list[area]['관광지'][location]:
+                            self.contexts.append(pair['context'])
+                            self.places.append(location)
+                            end_idx += 1
+                self.area_idx[area_list] = [start_idx, end_idx]
+                start_idx = end_idx
                 
     
     def get_embedding(self):
@@ -115,7 +115,7 @@ class DenseRetrieval:
             pickle.dump(p_embedding, file)
         print("Embedding pickle saved.")
         
-    def inference(self, single_query, topk:int=5, area:str="전국", use_elastic:True):
+    def inference(self, single_query, topk:int=5, area:str="전국", use_elastic=True):
         """
             area : 명소 검색 시 선택된 드랍다운 지역
             use_elastic : elastic + dense로 리트리빙을 진행할 지, dense만을 이용하여 진행할지 선택
@@ -148,7 +148,7 @@ class DenseRetrieval:
         pred_places = pd.DataFrame(total)
         return pred_places
     
-    def get_relevant_doc(self, query: str, k:int = 1, area:str):
+    def get_relevant_doc(self, query: str, area:str, k:int = 1):
         """
             area : 명소 검색 시 선택된 드랍다운 지역
 
@@ -219,7 +219,7 @@ class DenseRetrieval:
         """
             elastic search로 먼저 top 100~200 추출하는 함수
         """
-        es_result = es.run_retrieval(query)
+        es_result = self.es.run_retrieval(query)
         result_emb_list = []
         for data in es_result.iterrows():
             context_id = data[1]["id"]

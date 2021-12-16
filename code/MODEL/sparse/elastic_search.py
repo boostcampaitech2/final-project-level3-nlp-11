@@ -9,30 +9,43 @@ from datasets import Dataset, DatasetDict, Value, Features
 import sys, os
 
 class ElasticSearch:
-    def __init__(self, dir_path:str = "/opt/ml/final-project-level3-nlp-11", index_name:str="wiki-1"):
+    def __init__(self, dir_path:str = "/opt/ml/final-project-level3-nlp-11"):
         self.config: dict = {"host": "localhost", "port": 9200}
         self.dir_path = dir_path
 
-        self.index_name = index_name
         self.get_place_data()
         self.es = self.set_elastic_server()
         if not self.es:
             exit()
-        is_already_exist = self.set_mapping()
-        if not is_already_exist:
-            self.insert_data_to_elastic()
     
     def get_place_data(self):
-        with open(f'{self.dir_path}/data/pair.json', "r", encoding='utf-8-sig') as f:
-            blog_info = json.load(f)
-            self.contexts = []
+        with open(f'{self.dir_path}/data/MODEL/pair.json', "r", encoding='utf-8-sig') as f:
+            place_info = json.load(f)
+            self.contexts = {"전국": []}
+            change_area = {"대전" : "충청남도", "세종특별자치시": "충청남도", "울산" : "경상남도", "광주" : "전라남도"}
             i = 0
-            for area in blog_info:
-                for location in blog_info[area]['관광지']:
-                    for pair in blog_info[area]['관광지'][location]:
+            
+            for area in place_info:
+                if area in change_area:
+                    aft_area = change_area[area]
+                    if aft_area not in self.contexts:
+                        self.contexts[aft_area] = []
+                    j = len(self.contexts[aft_area])
+                else:
+                    if area not in self.contexts:
+                        self.contexts[area] = []
+                    j = len(self.contexts[area])
+                
+                for location in place_info[area]['관광지']:
+                    for pair in place_info[area]['관광지'][location]:
                         context = pair["context"]
-                        self.contexts.append({'context':context, 'place':location, 'doc_id': i})
+                        self.contexts["전국"].append({'context':context, 'place':location, 'doc_id': i})
                         i += 1
+                        if area in change_area:
+                            self.contexts[aft_area].append({'context':context, 'place':location, 'doc_id': j})
+                        else:
+                            self.contexts[area].append({'context':context, 'place':location, 'doc_id': j})
+                        j += 1
 
     def set_elastic_server(self):
         path_to_elastic = f"{self.dir_path}/code/MODEL/sparse/elasticsearch-7.9.2/bin/elasticsearch"
@@ -57,8 +70,8 @@ class ElasticSearch:
             )
             return None
 
-    def set_mapping(self) -> bool:
-        if self.es.indices.exists(index=self.index_name):
+    def set_mapping(self, index_name:str="전국") -> bool:
+        if self.es.indices.exists(index=index_name):
             print("Index Mapping already exists.")
             return True
         else:
@@ -93,29 +106,32 @@ class ElasticSearch:
 
             print(
                 self.es.indices.create(
-                    index=self.index_name, body=index_config, ignore=400
+                    index=index_name, body=index_config, ignore=400
                 )
             )
             return False
 
-    def insert_data_to_elastic(self) -> None:
-        for i, rec in enumerate(tqdm(self.contexts)):
+    def insert_data_to_elastic(self, index_name:str) -> None:
+        for i, rec in enumerate(tqdm(self.contexts[index_name])):
             try:
-                index_status = self.es.index(index=self.index_name, id=i, body=rec)
+                index_status = self.es.index(index=index_name, id=i, body=rec)
             except Exception as e:
                 print(f"Unable to load document {i}. because of {e}")
-        n_records = self.es.count(index=self.index_name)["count"]
-        print(f"Succesfully loaded {n_records} into {self.index_name}")
+        n_records = self.es.count(index=index_name)["count"]
+        print(f"Succesfully loaded {n_records} into {index_name}")
 
-    def get_top_k_passages(self, describe: str, k: int) -> list:
+    def get_top_k_passages(self, describe: str, k: int, index_name:str="전국") -> list:
         query = {"query": {"match": {"context": describe}}}
-        result = self.es.search(index=self.index_name, body=query, size=k)
+        result = self.es.search(indexindex_name, body=query, size=k)
         return result["hits"]["hits"]
 
-    def run_retrieval(self, describe: str, topk: int=50) -> DatasetDict:
+    def run_retrieval(self, describe: str, topk: int=100, index_name:str="전국") -> DatasetDict:
         results = []
 
-        passages = self.get_top_k_passages(describe=describe, k=topk)
+        is_already_exist = self.set_mapping(index_name=index_name)
+        if not is_already_exist:
+            self.insert_data_to_elastic(index_name=index_name)
+        passages = self.get_top_k_passages(describe=describe, k=topk, index_name=index_name)
         results = [{"id":int(passages[i]["_source"]["doc_id"]), "context": passages[i]["_source"]["context"], "place":passages[i]["_source"]["place"], "score":passages[i]["_score"]} for i in range(len(passages))]
 
         df = pd.DataFrame(results)

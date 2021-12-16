@@ -7,3 +7,4 @@ nohup.out
 **/encoder/
 **/elasticsearch-7.9.2/
 **/elasticsearch-7.9.2-linux-x86_64.tar.gz
+**.ipynb

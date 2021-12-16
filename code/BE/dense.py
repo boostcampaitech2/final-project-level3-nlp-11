@@ -133,10 +133,11 @@ class DenseRetrieval:
                 single_query, k=topk, area=area
             )
         total = []
-        for i in range(len(doc_scores)):
-            print(f"Top-{i+1} passage with score {doc_scores[i]:4f}")
-            print('Content name :', self.places[doc_indices[i]])
-            print('Contexts :', self.contexts[doc_indices[i]])
+
+        for i in range(topk):
+            # print(f"Top-{i+1} passage with score {doc_scores[i]:4f}")
+            # print('Content name :', self.places[doc_indices[i]])
+            # print('Contexts :', self.contexts[doc_indices[i]])
             tmp = {
                 # Retrieve한 Passage의 id, context를 반환합니다.
                 "rank": i,

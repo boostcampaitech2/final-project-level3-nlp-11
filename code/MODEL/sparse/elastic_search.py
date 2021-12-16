@@ -19,7 +19,7 @@ class ElasticSearch:
             exit()
     
     def get_place_data(self):
-        with open(f'{self.dir_path}/data/MODEL/pair.json', "r", encoding='utf-8-sig') as f:
+        with open(f'{self.dir_path}/data/pair.json', "r", encoding='utf-8-sig') as f:
             place_info = json.load(f)
             self.contexts = {"전국": []}
             change_area = {"대전" : "충청남도", "세종특별자치시": "충청남도", "울산" : "경상남도", "광주" : "전라남도"}
@@ -122,7 +122,7 @@ class ElasticSearch:
 
     def get_top_k_passages(self, describe: str, k: int, index_name:str="전국") -> list:
         query = {"query": {"match": {"context": describe}}}
-        result = self.es.search(indexindex_name, body=query, size=k)
+        result = self.es.search(index=index_name, body=query, size=k)
         return result["hits"]["hits"]
 
     def run_retrieval(self, describe: str, topk: int=100, index_name:str="전국") -> DatasetDict:

@@ -39,8 +39,9 @@ def main_page():
 # path/prediciton/?query={query}&location={location}
 @app.get("/prediction/")
 def predict(query:str=None):
-    pred = model.inference(query)
-    
+    pred = model.inference(single_query=query, use_elastic=True)
+    print(pred)
+    result = {}
     return {"result": "ok"} # place이름 list
 
 if __name__ == "__main__":

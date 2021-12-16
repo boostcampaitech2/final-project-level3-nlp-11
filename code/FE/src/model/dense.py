@@ -137,7 +137,7 @@ class DenseRetrieval:
             )
 
         total = []
-        if not doc_scores:
+        if not doc_scores or len(doc_scores) < topk:
             return None
         for i in range(topk):
             # print(f"Top-{i+1} passage with score {doc_scores[i]:4f}")

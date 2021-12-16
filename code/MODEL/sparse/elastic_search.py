@@ -9,7 +9,7 @@ from datasets import Dataset, DatasetDict, Value, Features
 import sys, os
 
 class ElasticSearch:
-    def __init__(self, dir_path:str = "/opt/ml/final-project-level3-nlp-11", index_name:str="wiki-1"):
+    def __init__(self, dir_path:str = "/opt/ml/final-project-level3-nlp-11", index_name:str="전국"):
         self.config: dict = {"host": "localhost", "port": 9200}
         self.dir_path = dir_path
 
@@ -26,13 +26,32 @@ class ElasticSearch:
         with open(f'{self.dir_path}/data/pair.json', "r", encoding='utf-8-sig') as f:
             blog_info = json.load(f)
             self.contexts = []
+            area_info = {"충청남도": ["충청남도", "세종특별자치시", "대전"], "경상남도": ["경상남도", "울산"], "전라남도": ["전라남도", "광주"]}
             i = 0
-            for area in blog_info:
-                for location in blog_info[area]['관광지']:
-                    for pair in blog_info[area]['관광지'][location]:
-                        context = pair["context"]
-                        self.contexts.append({'context':context, 'place':location, 'doc_id': i})
-                        i += 1
+            if self.index_name == "전국":
+                for area in blog_info:
+                    for location in blog_info[area]['관광지']:
+                        for pair in blog_info[area]['관광지'][location]:
+                            context = pair["context"]
+                            self.contexts.append({'context':context, 'place':location, 'doc_id': i})
+                            i += 1
+            elif self.index_name in blog_info:
+                if self.index_name in area_info:
+                    for area in area_info[self.index_name]:
+                        for location in blog_info[area]['관광지']:
+                            for pair in blog_info[area]['관광지'][location]:
+                                context = pair["context"]
+                                self.contexts.append({'context':context, 'place':location, 'doc_id': i})
+                                i += 1
+                else:
+                    for location in blog_info[self.index_name]['관광지']:
+                        for pair in blog_info[self.index_name]['관광지'][location]:
+                            context = pair["context"]
+                            self.contexts.append({'context':context, 'place':location, 'doc_id': i})
+                            i += 1
+            else:
+                print( f"Error : there is no {self.index_name} ")
+                exit()
 
     def set_elastic_server(self):
         path_to_elastic = f"{self.dir_path}/code/MODEL/sparse/elasticsearch-7.9.2/bin/elasticsearch"

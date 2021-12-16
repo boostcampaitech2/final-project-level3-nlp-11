@@ -115,7 +115,11 @@ class DenseRetrieval:
             pickle.dump(p_embedding, file)
         print("Embedding pickle saved.")
         
-    def inference(self, single_query, topk=5, area:str="전국", use_elastic:True):
+    def inference(self, single_query, topk:int=5, area:str="전국", use_elastic:True):
+        """
+            area : 명소 검색 시 선택된 드랍다운 지역
+            use_elastic : elastic + dense로 리트리빙을 진행할 지, dense만을 이용하여 진행할지 선택
+        """
         if self.p_embedding == None:
             self.get_embedding()
         
@@ -144,7 +148,17 @@ class DenseRetrieval:
         pred_places = pd.DataFrame(total)
         return pred_places
     
-    def get_relevant_doc(self, query: str, k = 1, area:str):
+    def get_relevant_doc(self, query: str, k:int = 1, area:str):
+        """
+            area : 명소 검색 시 선택된 드랍다운 지역
+
+            지역에 따른 index 정보를 이용하여 self.p_embedding에서 
+            해당 area의 embedding만을 p_embs에 담음.
+
+            sorted_result는 p_embs 기준의 index값을 감고 있기 때문에, 
+            self.p_embedding기준의 index값을 doc_indices가 리턴할 수 있도록
+            start_idx를 sorted_result의 값들에 더하여 이용
+        """
         q_encoder = self.q_encoder
         if area == "전국":
             p_embs = self.p_embedding

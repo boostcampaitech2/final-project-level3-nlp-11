@@ -140,6 +140,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--minimun_google_rating", type=int, default=3, help="minimun_google_rating"
     )
+    parser.add_argument(
+        "--useing_ko_spacing",
+        type=bool,
+        default=False,
+        help="auto fixing spacing",
+    )
 
     for k, v in config.items("preprocess"):
         parser.parse_args([str(k), str(v)], args)

@@ -133,7 +133,7 @@ class DenseRetrieval:
                 single_query, k=topk, area=area
             )
         total = []
-        for i in range(topk):
+        for i in range(len(doc_scores)):
             print(f"Top-{i+1} passage with score {doc_scores[i]:4f}")
             print('Content name :', self.places[doc_indices[i]])
             print('Contexts :', self.contexts[doc_indices[i]])
@@ -192,6 +192,8 @@ class DenseRetrieval:
     def get_relevant_doc_elastic(self, query: str, area: str, k: int = 5):
         q_encoder = self.q_encoder
         p_embs, p_embs_index_list = self.es_run_retrieval(query, area)
+        if k > len(p_embs):
+            k = len(p_embs)
 
         with torch.no_grad():
             q_encoder.eval()

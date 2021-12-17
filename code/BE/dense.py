@@ -76,6 +76,7 @@ class DenseRetrieval:
                             end_idx += 1
                 self.area_idx[area_list] = [start_idx, end_idx]
                 start_idx = end_idx
+            self.area_idx["전국"] = [0, end_idx]
                 
     
     def get_embedding(self):

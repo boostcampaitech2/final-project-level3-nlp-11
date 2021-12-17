@@ -188,7 +188,7 @@ class DenseRetrieval:
         doc_indices = [i+start_idx for i in sorted_result.tolist()[:k]]
         return doc_score, doc_indices
 
-    def get_relevant_doc_elastic(self, query: str, k = 5, area: str):
+    def get_relevant_doc_elastic(self, query: str, area: str, k: int = 5):
         q_encoder = self.q_encoder
         p_embs, p_embs_index_list = self.es_run_retrieval(query, area)
 

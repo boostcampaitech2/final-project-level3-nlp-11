@@ -30,7 +30,7 @@ def main_page():
     if sentence and area:
         with st.spinner("찾는 중!..."):
             dense_model = get_dense()
-            df = dense_model.inference(sentence, 25, area)
+            df = dense_model.inference(sentence, 25, area, use_elastic=False)
             if df is None:
                 st.write("한국어가 아니거나 너무 짧은 문장입니다")
             else:

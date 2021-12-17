@@ -19,12 +19,10 @@ class Api:
         ) as f:
             reload = json.load(f)
 
-        if location == "전국":
-            for area in reload:
-                if spot in reload[area]["관광지"]:
-                    contentid = reload[area]["관광지"][spot]["contentid"]
-        else:
-            contentid = reload[location]["관광지"][spot]["contentid"]
+        for area in reload:
+            if spot in reload[area]["관광지"]:
+                contentid = reload[area]["관광지"][spot]["contentid"]
+
         url = "http://api.visitkorea.or.kr/openapi/service/rest/KorService/detailCommon"
         param = {
             "ServiceKey": key,

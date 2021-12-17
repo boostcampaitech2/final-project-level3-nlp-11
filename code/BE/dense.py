@@ -193,7 +193,9 @@ class DenseRetrieval:
         q_encoder = self.q_encoder
         p_embs, p_embs_index_list = self.es_run_retrieval(query, area)
         if k > len(p_embs):
-            k = len(p_embs)
+            return self.get_relevant_doc(
+                query, k=k, area=area
+            )
 
         with torch.no_grad():
             q_encoder.eval()

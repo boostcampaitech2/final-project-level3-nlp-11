@@ -30,7 +30,7 @@ class DenseRetrieval:
         tokenizer_name:str,
         pickle_path:str,
         token_length:int,
-        es:ElasticSearch,
+        es:ElasticSearch=None,
     ) -> None:
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.p_encoder = AutoModel.from_pretrained(p_encoder_model).to(self.device)
@@ -76,6 +76,7 @@ class DenseRetrieval:
                             end_idx += 1
                 self.area_idx[area_list] = [start_idx, end_idx]
                 start_idx = end_idx
+            self.area_idx["전국"] = [0, end_idx]
                 
     
     def get_embedding(self):
@@ -125,17 +126,18 @@ class DenseRetrieval:
         
         if use_elastic:
             doc_scores, doc_indices = self.get_relevant_doc_elastic(
-                single_query, k=topk
+                single_query, k=topk, area=area
             )
         else:
             doc_scores, doc_indices = self.get_relevant_doc(
                 single_query, k=topk, area=area
             )
         total = []
+        
         for i in range(topk):
-            # print(f"Top-{i+1} passage with score {doc_scores[i]:4f}")
-            # print('Content name :', self.places[doc_indices[i]])
-            # print('Contexts :', self.contexts[doc_indices[i]])
+            print(f"Top-{i+1} passage with score {doc_scores[i]:4f}")
+            print('Content name :', self.places[doc_indices[i]])
+            print('Contexts :', self.contexts[doc_indices[i]])
             tmp = {
                 # Retrieve한 Passage의 id, context를 반환합니다.
                 "rank": i,
@@ -148,7 +150,7 @@ class DenseRetrieval:
         pred_places = pd.DataFrame(total)
         return pred_places
     
-    def get_relevant_doc(self, query: str, area:str, k:int = 1):
+    def get_relevant_doc(self, query: str, area:str, k:int = 5):
         """
             area : 명소 검색 시 선택된 드랍다운 지역
 
@@ -170,7 +172,7 @@ class DenseRetrieval:
         with torch.no_grad():
             q_encoder.eval()
             print('getting Query X Passage scores')
-            q = tokenizer(
+            q = self.tokenizer(
                 query, max_length=self.token_length, padding="max_length", truncation=True, return_tensors="pt"
             ).to("cuda")
             q_emb = q_encoder(**q).pooler_output.to("cpu").detach().numpy()
@@ -188,9 +190,13 @@ class DenseRetrieval:
         doc_indices = [i+start_idx for i in sorted_result.tolist()[:k]]
         return doc_score, doc_indices
 
-    def get_relevant_doc_elastic(self, query: str, k = 5):
+    def get_relevant_doc_elastic(self, query: str, area: str, k: int = 5):
         q_encoder = self.q_encoder
-        p_embs, p_embs_index_list = self.es_run_retrieval(query)
+        p_embs, p_embs_index_list = self.es_run_retrieval(query, area)
+        if k > len(p_embs):
+            return self.get_relevant_doc(
+                query, k=k, area=area
+            )
 
         with torch.no_grad():
             q_encoder.eval()
@@ -215,14 +221,15 @@ class DenseRetrieval:
         doc_indices = [p_embs_index_list[i] for i in embs_indices]
         return doc_score, doc_indices
     
-    def es_run_retrieval(self, query: str):
+    def es_run_retrieval(self, query: str, area: str):
         """
             elastic search로 먼저 top 100~200 추출하는 함수
         """
-        es_result = self.es.run_retrieval(query)
+        es_result = self.es.run_retrieval(describe=query, index_name=area)
         result_emb_list = []
+        start_idx = self.area_idx[area][0]
         for data in es_result.iterrows():
-            context_id = data[1]["id"]
+            context_id = start_idx + data[1]["id"]
             result_emb_list.append(context_id)
         return self.p_embedding[result_emb_list], result_emb_list
     

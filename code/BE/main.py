@@ -30,6 +30,13 @@ class ResItem(BaseModel):
     places: list
 
 
+class SurveyItemIn(BaseModel):
+    query: str
+    location: str
+    place: str
+    is_good: bool
+
+
 app = FastAPI()
 search_logger = Logger(
     table_id="ai-esg-trip-recommendation.log_data.search_result",
@@ -37,6 +44,10 @@ search_logger = Logger(
 )
 similar_logger = Logger(
     table_id="ai-esg-trip-recommendation.log_data.log_similar_data",
+    credential_json_path=os.environ.get(CREDENTIALS),
+)
+survey_logger = Logger(
+    table_id="ai-esg-trip-recommendation.log_data.log_survey_data",
     credential_json_path=os.environ.get(CREDENTIALS),
 )
 
@@ -134,8 +145,14 @@ def predict(query: str = None, location: str = "전국"):
     return JSONResponse(content=res_json)
 
 
+@app.post("/survey/")
+async def survey(item: SurveyItemIn):
+    now_time = datetime.now(timezone("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S")
+    log_survey(item.query, item.location, item.place, now_time, item.is_good)
+    return {"timestamp": now_time}
+
+
 def log_search(query: str, location: str, res_data: dict) -> None:
-    # TODO 비동기 처리 필요!
     result = []
     now_time = datetime.now(timezone("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S")
     for place in res_data["places"]:
@@ -161,6 +178,19 @@ def log_similar(query: str, location: str, res_data: dict) -> None:
         }
         result.append(row)
     similar_logger.insert_log(result)
+
+
+def log_survey(
+    query: str, location: str, place: str, now_time: datetime, is_good: bool
+) -> None:
+    row = {
+        "query": query,
+        "location": location,
+        "place": place,
+        "time": now_time,
+        "is_good": is_good,
+    }
+    survey_logger.insert_log([row])
 
 
 if __name__ == "__main__":

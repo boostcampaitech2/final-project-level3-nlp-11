@@ -134,7 +134,7 @@ def get_dense_data(df):
 def predict(query: str = None, location: str = "전국"):
     """
         장소묘사 Query에 대한 predict
-        API : {IP_path}/prediciton/?query={query}&location={location}
+        API : {IP_path}/predici/?query={query}&location={location}
     """
     pred = model.inference(single_query=query, area=location, use_elastic=True)
     places = get_dense_data(pred)

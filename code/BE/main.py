@@ -1,13 +1,22 @@
 from typing import Optional
+from datetime import datetime
+from pytz import timezone
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from dense import DenseRetrieval
 import numpy as np
+import os
+from dotenv import load_dotenv
+from logger import Logger
 
 import uvicorn
 import sys
+
+env_path = os.path.expanduser("~/final-project-level3-nlp-11/code/.env")
+load_dotenv(dotenv_path=env_path, verbose=True)
+from google.auth.environment_vars import CREDENTIALS
 
 sys.path.append("/opt/ml/final-project-level3-nlp-11/code/MODEL/sparse")
 from elastic_search import ElasticSearch
@@ -15,11 +24,21 @@ from elastic_search import ElasticSearch
 sys.path.append("/opt/ml/final-project-level3-nlp-11/sparse")
 from retrieval_similar import SimilarSparse
 
+
 class ResItem(BaseModel):
     location: str
     places: list
 
+
 app = FastAPI()
+search_logger = Logger(
+    table_id="ai-esg-trip-recommendation.log_data.search_result",
+    credential_json_path=os.environ.get(CREDENTIALS),
+)
+similar_logger = Logger(
+    table_id="ai-esg-trip-recommendation.log_data.log_similar_data",
+    credential_json_path=os.environ.get(CREDENTIALS),
+)
 
 ### 장소 묘사
 p_model = "./saved_models/p_encoder"
@@ -27,7 +46,7 @@ q_model = "./saved_models/q_encoder"
 tokenizer = "klue/bert-base"
 embedding_path = "./saved_models/dense_embedding.bin"
 
-model : DenseRetrieval = None
+model: DenseRetrieval = None
 
 ### 유사명소
 data_path = "../../data"
@@ -36,20 +55,32 @@ tokenizer = "klue/bert-base"
 
 similar_retrieval_model: SimilarSparse = None
 
+
 @app.on_event("startup")
 def server_on_event():
     # model load
     global model
     global similar_retrieval_model
     es = ElasticSearch()
-    model = DenseRetrieval(p_encoder_model=p_model, q_encoder_model=q_model, tokenizer_name=tokenizer, pickle_path=embedding_path, token_length=128, es=es)
-    similar_retrieval_model = SimilarSparse(pre_tokenizer=tokenizer, data_path=data_path, json_name=json_file_name)
+    model = DenseRetrieval(
+        p_encoder_model=p_model,
+        q_encoder_model=q_model,
+        tokenizer_name=tokenizer,
+        pickle_path=embedding_path,
+        token_length=128,
+        es=es,
+    )
+    similar_retrieval_model = SimilarSparse(
+        pre_tokenizer=tokenizer, data_path=data_path, json_name=json_file_name
+    )
     similar_retrieval_model.get_sparse_embedding()
     print("Model loaded !!")
+
 
 @app.on_event("shutdown")
 def server_off_event():
     print("The Server is Closed !!")
+
 
 @app.get("/")
 def main_page():
@@ -59,17 +90,21 @@ def main_page():
 
 ###유사 명소
 @app.get("/get_similar/")
-def get_similar(query:str=None, location:str="전국"):
+def get_similar(query: str = None, location: str = "전국"):
     true_false = similar_retrieval_model.get_query_contexts(query)
     if not true_false:
         print("No Matches, Run dense with query")
         exit()
     else:
-        result_contents = similar_retrieval_model.retrieve(similar_retrieval_model.query_contexts, 5, location)
+        result_contents = similar_retrieval_model.retrieve(
+            similar_retrieval_model.query_contexts, 5, location
+        )
         res = {"location": location, "places": list(result_contents)}
         result = ResItem(**res)
         res_json = jsonable_encoder(result)
+        log_similar(query, location, res_json)
         return JSONResponse(content=res_json)
+
 
 ### 장소 묘사 predict
 def get_dense_data(df):
@@ -85,7 +120,7 @@ def get_dense_data(df):
 
 
 @app.get("/predict/")
-def predict(query:str=None, location:str="전국"):
+def predict(query: str = None, location: str = "전국"):
     """
         장소묘사 Query에 대한 predict
         API : {IP_path}/prediciton/?query={query}&location={location}
@@ -95,7 +130,38 @@ def predict(query:str=None, location:str="전국"):
     res = {"location": location, "places": list(places)}
     result = ResItem(**res)
     res_json = jsonable_encoder(result)
+    log_search(query, location, res_json)
     return JSONResponse(content=res_json)
+
+
+def log_search(query: str, location: str, res_data: dict) -> None:
+    # TODO 비동기 처리 필요!
+    result = []
+    now_time = datetime.now(timezone("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S")
+    for place in res_data["places"]:
+        row = {
+            "query": query,
+            "location": location,
+            "place": place,
+            "time": now_time,
+        }
+        result.append(row)
+    search_logger.insert_log(result)
+
+
+def log_similar(query: str, location: str, res_data: dict) -> None:
+    result = []
+    now_time = datetime.now(timezone("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S")
+    for place in res_data["places"]:
+        row = {
+            "location": location,
+            "input_place": query,
+            "output_place": place,
+            "time": now_time,
+        }
+        result.append(row)
+    similar_logger.insert_log(result)
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

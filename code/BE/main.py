@@ -1,29 +1,19 @@
 from typing import Optional
-<<<<<<< HEAD
-=======
 from datetime import datetime
 from pytz import timezone
->>>>>>> b8f22ec398506b11f6956ef164d014f5c2b9367a
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from dense import DenseRetrieval
 import numpy as np
-<<<<<<< HEAD
-=======
 import os
 from dotenv import load_dotenv
 from logger import Logger
->>>>>>> b8f22ec398506b11f6956ef164d014f5c2b9367a
 
 import uvicorn
 import sys
 
-<<<<<<< HEAD
-sys.path.append("/opt/ml/final-project-level3-nlp-11/code/MODEL/sparse")
-from elastic_search import ElasticSearch
-=======
 env_path = os.path.expanduser("~/final-project-level3-nlp-11/code/.env")
 load_dotenv(dotenv_path=env_path, verbose=True)
 from google.auth.environment_vars import CREDENTIALS
@@ -45,18 +35,9 @@ class SurveyItemIn(BaseModel):
     location: str
     place: str
     is_good: bool
->>>>>>> b8f22ec398506b11f6956ef164d014f5c2b9367a
 
-sys.path.append("/opt/ml/final-project-level3-nlp-11/sparse")
-from retrieval_similar import SimilarSparse
-
-class ResItem(BaseModel):
-    location: str
-    places: list
 
 app = FastAPI()
-<<<<<<< HEAD
-=======
 search_logger = Logger(
     table_id="ai-esg-trip-recommendation.log_data.search_result",
     credential_json_path=os.environ.get(CREDENTIALS),
@@ -69,7 +50,6 @@ survey_logger = Logger(
     table_id="ai-esg-trip-recommendation.log_data.log_survey_data",
     credential_json_path=os.environ.get(CREDENTIALS),
 )
->>>>>>> b8f22ec398506b11f6956ef164d014f5c2b9367a
 
 ### 장소 묘사
 p_model = "./saved_models/p_encoder"

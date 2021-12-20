@@ -54,7 +54,7 @@ class Api:
             if "firstimage" in response:
                 info["img_url"] = response["firstimage"]
             else:
-                info["img_url"] = "https://missioninfra.net/img/noimg/noimg_4x3.gif"
+                info["img_url"] = "https://i.imgur.com/wbN96ze.png"
             if "addr1" in response:
                 info["addr1"] = response["addr1"]
             else:

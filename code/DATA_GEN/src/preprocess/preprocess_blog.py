@@ -4,6 +4,7 @@ import pandas as pd
 from tqdm import tqdm
 from dotenv import load_dotenv
 from src.crawling.utils.replace_text import ReplaceText
+from src.crawling.utils.spacing import SpacingText
 
 env_path = os.path.expanduser("~/final-project-level3-nlp-11/code/.env")
 load_dotenv(dotenv_path=env_path, verbose=True)
@@ -27,7 +28,7 @@ class PreprocessBlog:
     def preprocess(self, data, info, args):
         result = {}
         result_info = {}
-        for state in tqdm(info.keys()):
+        for state in info.keys():
             if not state in result:
                 result[state] = {}
                 result_info[state] = {}
@@ -35,7 +36,9 @@ class PreprocessBlog:
                 if not types in result[state]:
                     result[state][types] = {}
                     result_info[state][types] = {}
-                for location in info[state][types].keys():
+                for location in tqdm(
+                    info[state][types].keys(), desc=f"{state}-{types}"
+                ):
                     if (
                         info[state][types][location]["total"]
                         < args.minimum_blog_reviews
@@ -51,7 +54,10 @@ class PreprocessBlog:
                             continue
                         if len(context) < args.minimun_blog_length:
                             continue
-                        i["context"] = context
+                        if args.using_ko_spacing:
+                            i["context"] = SpacingText().get_spacing(context)
+                        else:
+                            i["context"] = context
                         result[state][types][location].append(i)
                     result_info[state][types][location] = info[state][types][location]
 

@@ -140,12 +140,25 @@ if __name__ == "__main__":
     parser.add_argument(
         "--minimun_google_rating", type=int, default=3, help="minimun_google_rating"
     )
+    parser.add_argument(
+        "--useing_ko_spacing",
+        type=bool,
+        default=False,
+        help="auto fixing spacing",
+    )
 
     for k, v in config.items("preprocess"):
         parser.parse_args([str(k), str(v)], args)
 
     parser.add_argument(
         "--minimun_pair_num", type=int, default=5, help="minimun_pair_num"
+    )
+
+    parser.add_argument(
+        "--clean_tokenizer",
+        type=bool,
+        default=False,
+        help="without Special Characters only korean and english little",
     )
 
     for k, v in config.items("mkpair"):

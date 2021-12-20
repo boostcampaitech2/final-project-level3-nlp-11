@@ -2,7 +2,7 @@ import streamlit as st
 import os
 import numpy as np
 from model.retrieval_similar import SimilarSparse
-from api.index import Api
+from api.tour_api import Api
 from model.elastic_search import ElasticSearch
 from model.dense import DenseRetrieval
 from dotenv import load_dotenv

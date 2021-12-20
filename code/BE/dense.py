@@ -174,7 +174,7 @@ class DenseRetrieval:
             print('getting Query X Passage scores')
             q = self.tokenizer(
                 query, max_length=self.token_length, padding="max_length", truncation=True, return_tensors="pt"
-            ).to("cuda")
+            ).to(self.device)
             q_emb = q_encoder(**q).pooler_output.to("cpu").detach().numpy()
 
         # result = q_emb * self.p_embedding.T

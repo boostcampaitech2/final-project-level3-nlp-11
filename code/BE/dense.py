@@ -116,7 +116,7 @@ class DenseRetrieval:
             pickle.dump(p_embedding, file)
         print("Embedding pickle saved.")
         
-    def inference(self, single_query, topk:int=5, area:str="전국", use_elastic=True):
+    def inference(self, single_query, topk:int=25, area:str="전국", use_elastic=True):
         """
             area : 명소 검색 시 선택된 드랍다운 지역
             use_elastic : elastic + dense로 리트리빙을 진행할 지, dense만을 이용하여 진행할지 선택

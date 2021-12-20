@@ -45,6 +45,11 @@ def server_on_event():
     model = DenseRetrieval(p_encoder_model=p_model, q_encoder_model=q_model, tokenizer_name=tokenizer, pickle_path=embedding_path, token_length=128, es=es)
     similar_retrieval_model = SimilarSparse(pre_tokenizer=tokenizer, data_path=data_path, json_name=json_file_name)
     similar_retrieval_model.get_sparse_embedding()
+
+    ### for predicting faster
+    locations = ["전국", "서울", "인천", "대구", "부산", "경기도", "강원도", "충청남도", "충청북도", "경상북도", "경상남도", "전라북도", "전라남도", "제주도"]
+    for location in locations:
+        pred = model.inference(single_query="테스트", area=location, use_elastic=True)
     print("Model loaded !!")
 
 @app.on_event("shutdown")
@@ -98,4 +103,4 @@ def predict(query:str=None, location:str="전국"):
     return JSONResponse(content=res_json)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=6006)

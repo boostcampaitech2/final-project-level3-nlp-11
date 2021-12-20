@@ -36,14 +36,36 @@ class MkPair:
         mecab = Mecab()
         tokenizer_func = lambda x: mecab.morphs(x)
         corpus = []
+        raw_corpus = []
         queries = []
+        raw_queries = []
+        url = []
         for pair in dataset:
-            corpus.append(pair["context"])
+
+            if args.clean_tokenizer:
+                context = pair["context"]
+                context = re.sub(r"""([^a-zA-Z 0-9ㄱ-ㅎ|ㅏ-ㅣ|가-힣])""", "", context)
+                raw_corpus.append(pair["context"])
+                corpus.append(context)
+            else:
+                raw_corpus.append(pair["context"])
+                corpus.append(pair["context"])
+
+            url.append(pair["url"])
         for pair in review:
-            context = re.findall(r"""[ ]""", pair["review"])
+            context = re.findall(r"""[ ]""", review)
             if len(context) < 5:
                 continue
-            queries.append(pair["review"])
+
+            if args.clean_tokenizer:
+                review = pair["review"]
+                review = re.sub(r"""([^a-zA-Z 0-9ㄱ-ㅎ|ㅏ-ㅣ|가-힣])""", "", review)
+                queries.append(review)
+                raw_queries.append(pair["review"])
+            else:
+                queries.append(pair["review"])
+                raw_queries.append(pair["review"])
+
         if len(queries) < args.minimun_pair_num:
             return None
         vectorizer = TfidfVectorizer(tokenizer=tokenizer_func, ngram_range=(1, 2))
@@ -69,10 +91,7 @@ class MkPair:
                 continue
             duplication_context.append(y)
             duplication_query.append(x)
-            tmp = {
-                "query": queries[x],
-                "context": corpus[y],
-            }
+            tmp = {"query": raw_queries[x], "context": raw_corpus[y], "url": url[y]}
             pair.append(tmp)
         if len(pair) < args.minimun_pair_num:
             return None

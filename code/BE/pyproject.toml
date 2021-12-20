@@ -19,6 +19,7 @@ scikit-learn = "^1.0.1"
 python-dotenv = "^0.19.2"
 google-cloud-storage = "^1.43.0"
 google-api-python-client = "^2.33.0"
+google-cloud-bigquery = "^2.31.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"

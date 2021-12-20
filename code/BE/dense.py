@@ -116,7 +116,7 @@ class DenseRetrieval:
             pickle.dump(p_embedding, file)
         print("Embedding pickle saved.")
         
-    def inference(self, single_query, topk:int=5, area:str="전국", use_elastic=True):
+    def inference(self, single_query, topk:int=25, area:str="전국", use_elastic=True):
         """
             area : 명소 검색 시 선택된 드랍다운 지역
             use_elastic : elastic + dense로 리트리빙을 진행할 지, dense만을 이용하여 진행할지 선택
@@ -133,10 +133,11 @@ class DenseRetrieval:
                 single_query, k=topk, area=area
             )
         total = []
-        for i in range(len(doc_scores)):
-            print(f"Top-{i+1} passage with score {doc_scores[i]:4f}")
-            print('Content name :', self.places[doc_indices[i]])
-            print('Contexts :', self.contexts[doc_indices[i]])
+
+        for i in range(topk):
+            # print(f"Top-{i+1} passage with score {doc_scores[i]:4f}")
+            # print('Content name :', self.places[doc_indices[i]])
+            # print('Contexts :', self.contexts[doc_indices[i]])
             tmp = {
                 # Retrieve한 Passage의 id, context를 반환합니다.
                 "rank": i,

@@ -1,16 +1,51 @@
 from typing import Optional
+<<<<<<< HEAD
+=======
+from datetime import datetime
+from pytz import timezone
+>>>>>>> b8f22ec398506b11f6956ef164d014f5c2b9367a
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from dense import DenseRetrieval
 import numpy as np
+<<<<<<< HEAD
+=======
+import os
+from dotenv import load_dotenv
+from logger import Logger
+>>>>>>> b8f22ec398506b11f6956ef164d014f5c2b9367a
 
 import uvicorn
 import sys
 
+<<<<<<< HEAD
 sys.path.append("/opt/ml/final-project-level3-nlp-11/code/MODEL/sparse")
 from elastic_search import ElasticSearch
+=======
+env_path = os.path.expanduser("~/final-project-level3-nlp-11/code/.env")
+load_dotenv(dotenv_path=env_path, verbose=True)
+from google.auth.environment_vars import CREDENTIALS
+
+sys.path.append("/opt/ml/final-project-level3-nlp-11/code/MODEL/sparse")
+from elastic_search import ElasticSearch
+
+sys.path.append("/opt/ml/final-project-level3-nlp-11/sparse")
+from retrieval_similar import SimilarSparse
+
+
+class ResItem(BaseModel):
+    location: str
+    places: list
+
+
+class SurveyItemIn(BaseModel):
+    query: str
+    location: str
+    place: str
+    is_good: bool
+>>>>>>> b8f22ec398506b11f6956ef164d014f5c2b9367a
 
 sys.path.append("/opt/ml/final-project-level3-nlp-11/sparse")
 from retrieval_similar import SimilarSparse
@@ -20,6 +55,21 @@ class ResItem(BaseModel):
     places: list
 
 app = FastAPI()
+<<<<<<< HEAD
+=======
+search_logger = Logger(
+    table_id="ai-esg-trip-recommendation.log_data.search_result",
+    credential_json_path=os.environ.get(CREDENTIALS),
+)
+similar_logger = Logger(
+    table_id="ai-esg-trip-recommendation.log_data.log_similar_data",
+    credential_json_path=os.environ.get(CREDENTIALS),
+)
+survey_logger = Logger(
+    table_id="ai-esg-trip-recommendation.log_data.log_survey_data",
+    credential_json_path=os.environ.get(CREDENTIALS),
+)
+>>>>>>> b8f22ec398506b11f6956ef164d014f5c2b9367a
 
 ### 장소 묘사
 p_model = "./saved_models/p_encoder"
@@ -27,7 +77,15 @@ q_model = "./saved_models/q_encoder"
 tokenizer = "klue/bert-base"
 embedding_path = "./saved_models/dense_embedding.bin"
 
-model : DenseRetrieval = None
+model: DenseRetrieval = None
+
+### 유사명소
+data_path = "../../data"
+json_file_name = "pair.json"
+tokenizer = "klue/bert-base"
+
+similar_retrieval_model: SimilarSparse = None
+
 
 ### 유사명소
 data_path = "../../data"
@@ -52,9 +110,11 @@ def server_on_event():
         pred = model.inference(single_query="테스트", area=location, use_elastic=True)
     print("Model loaded !!")
 
+
 @app.on_event("shutdown")
 def server_off_event():
     print("The Server is Closed !!")
+
 
 @app.get("/")
 def main_page():
@@ -64,17 +124,21 @@ def main_page():
 
 ###유사 명소
 @app.get("/get_similar/")
-def get_similar(query:str=None, location:str="전국"):
+def get_similar(query: str = None, location: str = "전국"):
     true_false = similar_retrieval_model.get_query_contexts(query)
     if not true_false:
         print("No Matches, Run dense with query")
         exit()
     else:
-        result_contents = similar_retrieval_model.retrieve(similar_retrieval_model.query_contexts, 5, location)
+        result_contents = similar_retrieval_model.retrieve(
+            similar_retrieval_model.query_contexts, 5, location
+        )
         res = {"location": location, "places": list(result_contents)}
         result = ResItem(**res)
         res_json = jsonable_encoder(result)
+        log_similar(query, location, res_json)
         return JSONResponse(content=res_json)
+
 
 ### 장소 묘사 predict
 def get_dense_data(df):
@@ -90,17 +154,67 @@ def get_dense_data(df):
 
 
 @app.get("/predict/")
-def predict(query:str=None, location:str="전국"):
+def predict(query: str = None, location: str = "전국"):
     """
         장소묘사 Query에 대한 predict
-        API : {IP_path}/prediciton/?query={query}&location={location}
+        API : {IP_path}/predici/?query={query}&location={location}
     """
     pred = model.inference(single_query=query, area=location, use_elastic=True)
     places = get_dense_data(pred)
     res = {"location": location, "places": list(places)}
     result = ResItem(**res)
     res_json = jsonable_encoder(result)
+    log_search(query, location, res_json)
     return JSONResponse(content=res_json)
+
+
+@app.post("/survey/")
+async def survey(item: SurveyItemIn):
+    now_time = datetime.now(timezone("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S")
+    log_survey(item.query, item.location, item.place, now_time, item.is_good)
+    return {"timestamp": now_time}
+
+
+def log_search(query: str, location: str, res_data: dict) -> None:
+    result = []
+    now_time = datetime.now(timezone("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S")
+    for place in res_data["places"]:
+        row = {
+            "query": query,
+            "location": location,
+            "place": place,
+            "time": now_time,
+        }
+        result.append(row)
+    search_logger.insert_log(result)
+
+
+def log_similar(query: str, location: str, res_data: dict) -> None:
+    result = []
+    now_time = datetime.now(timezone("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S")
+    for place in res_data["places"]:
+        row = {
+            "location": location,
+            "input_place": query,
+            "output_place": place,
+            "time": now_time,
+        }
+        result.append(row)
+    similar_logger.insert_log(result)
+
+
+def log_survey(
+    query: str, location: str, place: str, now_time: datetime, is_good: bool
+) -> None:
+    row = {
+        "query": query,
+        "location": location,
+        "place": place,
+        "time": now_time,
+        "is_good": is_good,
+    }
+    survey_logger.insert_log([row])
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=6006)

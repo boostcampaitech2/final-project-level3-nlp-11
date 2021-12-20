@@ -4,9 +4,9 @@ import streamlit as st
 
 from styles.main_list import main_list_style
 from components.main_list_item import parser_data
-from model.model_index import get_data, get_model
 from util.get_name_list import get_name_list
 from util.theme_name_tuple import get_teme_name_tuple
+from api.model import ModelApi
 from dotenv import load_dotenv
 
 env_path = os.path.expanduser("~/final-project-level3-nlp-11/code/.env")
@@ -31,15 +31,15 @@ def similar_page():
     if sentence != "" and area:
         with st.spinner("찾는 중!..."):
             data_path = os.getenv("DATA_PATH")
-            retriever = get_model(data_path)
-            result_contents = get_data(retriever, sentence, area)
+            result_contents = ModelApi().request_similar(sentence, area)
             if not result_contents:
                 st.write("찾기 실패!")
+
     link = f"""
             {main_list_style()}
             <hr>
             <div style="font-size:62.5%">
-                {parser_data(result_contents,area)}
+                {parser_data(result_contents,area,sentence)}
             </div>         
             """
     st.markdown(link, unsafe_allow_html=True)

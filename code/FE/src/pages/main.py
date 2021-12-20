@@ -8,7 +8,7 @@ from PIL import Image
 from styles.main_list import main_list_style
 from components.main_list_item import parser_data
 from util.theme_name_tuple import get_teme_name_tuple
-from model.model_index import get_dense, get_dense_data
+from api.model import ModelApi
 from dotenv import load_dotenv
 
 env_path = os.path.expanduser("~/final-project-level3-nlp-11/code/.env")
@@ -29,18 +29,16 @@ def main_page():
     data = ""
     if sentence and area:
         with st.spinner("찾는 중!..."):
-            dense_model = get_dense()
-            df = dense_model.inference(sentence, 25, area, use_elastic=False)
-            if df is None:
-                st.write("한국어가 아니거나 너무 짧은 문장입니다")
-            else:
-                data = get_dense_data(df, area)
+            data = ModelApi().request_predict(sentence, area)
+
+            if not data:
+                st.write("한국어 또는 충분히 긴 문장으로 작성해주시기 바랍니다.")
 
     link = f"""
             {main_list_style()}
             <hr>
             <div style="font-size:62.5%">
-                {parser_data(data,area)}
+                {parser_data(data,area,sentence)}
             </div>         
             """
     st.markdown(link, unsafe_allow_html=True)

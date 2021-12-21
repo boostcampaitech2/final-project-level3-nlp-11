@@ -1,10 +1,11 @@
 from typing import Optional
 from datetime import datetime
 from pytz import timezone
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from torch._C import BenchmarkConfig
 from dense import DenseRetrieval
 import numpy as np
 import os
@@ -74,18 +75,43 @@ tokenizer = "klue/bert-base"
 
 similar_retrieval_model: SimilarSparse = None
 
+
 @app.on_event("startup")
 def server_on_event():
     # model load
     global model
     global similar_retrieval_model
     es = ElasticSearch()
-    model = DenseRetrieval(p_encoder_model=p_model, q_encoder_model=q_model, tokenizer_name=tokenizer, pickle_path=embedding_path, token_length=128, es=es)
-    similar_retrieval_model = SimilarSparse(pre_tokenizer=tokenizer, data_path=data_path, json_name=json_file_name)
+    model = DenseRetrieval(
+        p_encoder_model=p_model,
+        q_encoder_model=q_model,
+        tokenizer_name=tokenizer,
+        pickle_path=embedding_path,
+        token_length=128,
+        es=es,
+    )
+    similar_retrieval_model = SimilarSparse(
+        pre_tokenizer=tokenizer, data_path=data_path, json_name=json_file_name
+    )
     similar_retrieval_model.get_sparse_embedding()
 
     ### for predicting faster
-    locations = ["전국", "서울", "인천", "대구", "부산", "경기도", "강원도", "충청남도", "충청북도", "경상북도", "경상남도", "전라북도", "전라남도", "제주도"]
+    locations = [
+        "전국",
+        "서울",
+        "인천",
+        "대구",
+        "부산",
+        "경기도",
+        "강원도",
+        "충청남도",
+        "충청북도",
+        "경상북도",
+        "경상남도",
+        "전라북도",
+        "전라남도",
+        "제주도",
+    ]
     for location in locations:
         pred = model.inference(single_query="테스트", area=location, use_elastic=True)
     print("Model loaded !!")
@@ -104,7 +130,9 @@ def main_page():
 
 ###유사 명소
 @app.get("/get_similar/")
-def get_similar(query: str = None, location: str = "전국"):
+async def get_similar(
+    background_task: BackgroundTasks, query: str = None, location: str = "전국"
+):
     true_false = similar_retrieval_model.get_query_contexts(query)
     if not true_false:
         print("No Matches, Run dense with query")
@@ -116,7 +144,7 @@ def get_similar(query: str = None, location: str = "전국"):
         res = {"location": location, "places": list(result_contents)}
         result = ResItem(**res)
         res_json = jsonable_encoder(result)
-        log_similar(query, location, res_json)
+        background_task.add_task(log_similar, query, location, res_json)
         return JSONResponse(content=res_json)
 
 
@@ -134,7 +162,9 @@ def get_dense_data(df):
 
 
 @app.get("/predict/")
-def predict(query: str = None, location: str = "전국"):
+async def predict(
+    background_task: BackgroundTasks, query: str = None, location: str = "전국"
+):
     """
         장소묘사 Query에 대한 predict
         API : {IP_path}/predici/?query={query}&location={location}
@@ -144,14 +174,16 @@ def predict(query: str = None, location: str = "전국"):
     res = {"location": location, "places": list(places)}
     result = ResItem(**res)
     res_json = jsonable_encoder(result)
-    log_search(query, location, res_json)
+    background_task.add_task(log_search, query, location, res_json)
     return JSONResponse(content=res_json)
 
 
 @app.post("/survey/")
-async def survey(item: SurveyItemIn):
+async def survey(background_task: BackgroundTasks, item: SurveyItemIn):
     now_time = datetime.now(timezone("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S")
-    log_survey(item.query, item.location, item.place, now_time, item.is_good)
+    background_task.add_task(
+        log_survey, item.query, item.location, item.place, now_time, item.is_good
+    )
     return {"timestamp": now_time}
 
 

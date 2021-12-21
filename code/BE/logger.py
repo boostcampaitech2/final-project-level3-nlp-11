@@ -19,10 +19,12 @@ class Logger:
         self.credential_json_path = credential_json_path
 
     def insert_log(self, json_data: List[dict]):
+        print("start insert log")
         credentials = service_account.Credentials.from_service_account_file(
             filename=self.credential_json_path
         )
         client = bigquery.Client(credentials=credentials)
         table = bigquery.table.Table(self.table_id)
         client.insert_rows_json(table, json_data)
+        print("end insert log")
 

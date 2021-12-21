@@ -43,15 +43,7 @@ class DenseRetrieval:
         self.tokenizer = AutoTokenizer.from_pretrained(self.args.tokenizer_name)
         
         self.p_embedding = None
-        self.contexts = []
-        self.places = []
-        with open(self.args.dataset_name, "r", encoding="utf-8-sig") as f:
-            location_list = json.load(f)
-            for area in location_list:
-                for location in location_list[area]['관광지']:
-                    for pair in location_list[area]['관광지'][location]:
-                        self.contexts.append(pair['context'])
-                        self.places.append(location)
+        self.train_datadict, self.contexts, self.places = get_train_dataset(self.args.dataset_path)
         torch.cuda.empty_cache()
     
     def get_embedding(self):
@@ -147,9 +139,8 @@ class DenseRetrieval:
         args = self.args
         batch_size = args.batch_size
         
-        train_datadict = get_train_dataset()
-        train_data = train_datadict["train"]
-        val_data = train_datadict["validation"]
+        train_data = self.train_datadict["train"]
+        val_data = self.train_datadict["validation"]
         tokenizer = self.tokenizer
 
         # get in-batch dataset
@@ -257,57 +248,57 @@ class DenseRetrieval:
                         wandb.log({"loss": loss}, step=global_step)
             
             print(f'train epoch : {epoch} done')
-            with torch.no_grad():
-                print(" testing for validation set ", "-"*40)
-                p_encoder.eval()
+            if epoch > args.val_start_epoch:
+                with torch.no_grad():
+                    print(" testing for validation set ", "-"*40)
+                    p_encoder.eval()
 
-                p_embs = []
-                for p in tqdm(self.contexts):
-                    p = tokenizer(p, max_length=self.args.token_length, padding="max_length", truncation=True, return_tensors='pt').to('cuda')
-                    p_emb = p_encoder(**p).pooler_output.to('cpu').numpy()
-                    p_embs.append(p_emb)
+                    p_embs = []
+                    for p in tqdm(self.contexts):
+                        p = tokenizer(p, max_length=self.args.token_length, padding="max_length", truncation=True, return_tensors='pt').to('cuda')
+                        p_emb = p_encoder(**p).pooler_output.to('cpu').numpy()
+                        p_embs.append(p_emb)
 
-                p_embs = torch.Tensor(p_embs).squeeze()  # (num_passage, emb_dim)
+                    p_embs = torch.Tensor(p_embs).squeeze()  # (num_passage, emb_dim)
 
-                top = {1:0, 5:0, 10:0, 30:0, 50:0, 100:0}
-                print("tmp embdding done")
-                q_encoder.eval()
-                for datum in tqdm(val_data):
-                    query = datum["query"]
-                    sample_context = datum["context"]
+                    top = {1:0, 5:0, 10:0, 30:0, 50:0, 100:0}
+                    print("tmp embdding done")
+                    q_encoder.eval()
+                    for datum in tqdm(val_data):
+                        query = datum["query"]
+                        sample_place = datum["place"]
 
-                    q_seqs_val = tokenizer([query], max_length=self.args.token_length, padding="max_length", truncation=True, return_tensors='pt').to('cuda')
-                    q_emb = q_encoder(**q_seqs_val).pooler_output.to('cpu')  #(num_query, emb_dim)
+                        q_seqs_val = tokenizer([query], max_length=self.args.token_length, padding="max_length", truncation=True, return_tensors='pt').to('cuda')
+                        q_emb = q_encoder(**q_seqs_val).pooler_output.to('cpu')  #(num_query, emb_dim)
 
-                    dot_prod_scores = torch.matmul(q_emb, torch.transpose(p_embs, 0, 1))
-                    rank = torch.argsort(dot_prod_scores, dim=1, descending=True).squeeze()
+                        dot_prod_scores = torch.matmul(q_emb, torch.transpose(p_embs, 0, 1))
+                        rank = torch.argsort(dot_prod_scores, dim=1, descending=True).squeeze()
 
-                    check = False
-                    for idx in rank[:100]:
-                        if sample_context == self.contexts[idx]:
-                            for k in top:
-                                if idx < k:
-                                    top[k] += 1
-                                    if k == 100:
-                                        check = True
-                            if check:
-                                break
-            print("-"*20," validation set accuracy ", "-"*20)
-            for k in top:
-                top[k] /= len(val_data)
-                print(f"for top-{k} acc : {top[k]}")
-            for k in top:
-                if top[k] > best_top[k]:
-                    best_top[k] = top[k]
-            p_encoder.save_pretrained(
-                save_directory=f"{args.save_path_p}/epoch{epoch}"
-            )
-            q_encoder.save_pretrained(
-                save_directory=f"{args.save_path_q}/epoch{epoch}"
-            )
+                        check = False
+                        for idx in rank[:100]:
+                            if sample_place == self.places[idx]:
+                                for k in top:
+                                    if idx < k:
+                                        top[k] += 1
+                                        if k == 100:
+                                            check = True
+                                if check:
+                                    break
+                print("-"*20," validation set accuracy ", "-"*20)
+                for k in top:
+                    top[k] /= len(val_data)
+                    print(f"for top-{k} acc : {top[k]*100:0.4f}")
+                    wandb.log({f"val/top-{k} acc": top[k]}, step=epoch)
+                for k in top:
+                    if top[k] > best_top[k]:
+                        best_top[k] = top[k]
+                p_encoder.save_pretrained(
+                    save_directory=f"{args.save_path_p}/epoch{epoch}"
+                )
+                q_encoder.save_pretrained(
+                    save_directory=f"{args.save_path_q}/epoch{epoch}"
+                )
         print("all done!!", '-'*40)
-        for k in best_top:
-            print(f"for best_top-{k} acc : {best_top[k]}")
 
 
 if __name__ == "__main__":
@@ -319,7 +310,7 @@ if __name__ == "__main__":
         "--save_path_p", default="./encoder/p_encoder", type=str, help=""
     )
     parser.add_argument(
-        "--dataset_name", default="/opt/ml/final-project-level3-nlp-11/data/MODEL/pair.json", type=str, help=""
+        "--dataset_path", default="/opt/ml/final-project-level3-nlp-11/data/MODEL", type=str, help=""
     )
     parser.add_argument(
         "--tokenizer_name",
@@ -374,13 +365,13 @@ if __name__ == "__main__":
         "--save_epoch", default=10, type=int, help="save encoders per epoch"
     )
     parser.add_argument(
-        "--log_step", default=100, type=int, help="log loss to wandb per step"
+        "--log_step", default=600, type=int, help="log loss to wandb per step"
     )
     parser.add_argument(
-        "--in_batch",
-        default=False,
-        type=bool,
-        help="if True, training over in-batch sample",
+        "--val_start_epoch",
+        default=10,
+        type=int,
+        help="validation starting epoch",
     )
     parser.add_argument(
         "--adam_epsilon", default=1e-8, type=float, help="adam epsilon for optimizer"

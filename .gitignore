@@ -2,3 +2,14 @@
 **/data/
 **/__pycache__/
 **/.env
+**/.DS_Store
+nohup.out
+**/encoder/
+**/elasticsearch-7.9.2/
+**/elasticsearch-7.9.2-linux-x86_64.tar.gz
+**/wandb
+**/output
+**/DAPT_DOCS.txt
+**.ipynb
+**/key/
+

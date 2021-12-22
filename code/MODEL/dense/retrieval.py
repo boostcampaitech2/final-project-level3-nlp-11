@@ -399,11 +399,11 @@ if __name__ == "__main__":
         "--save_epoch", default=10, type=int, help="save encoders per epoch"
     )
     parser.add_argument(
-        "--log_step", default=600, type=int, help="log loss to wandb per step"
+        "--log_step", default=50, type=int, help="log loss to wandb per step"
     )
     parser.add_argument(
         "--val_start_epoch",
-        default=10,
+        default=1,
         type=int,
         help="validation starting epoch",
     )

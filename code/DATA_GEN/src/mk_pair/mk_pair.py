@@ -53,7 +53,7 @@ class MkPair:
 
             url.append(pair["url"])
         for pair in review:
-            context = re.findall(r"""[ ]""", review)
+            context = re.findall(r"""[ ]""", pair["review"])
             if len(context) < 5:
                 continue
 

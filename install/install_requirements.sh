@@ -18,3 +18,6 @@ pip install PyYAML==6.0
 
 # Model
 pip install elasticsearch
+
+## DAPT
+pip install git+https://github.com/huggingface/transformers

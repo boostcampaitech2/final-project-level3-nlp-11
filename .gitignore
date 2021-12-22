@@ -10,3 +10,6 @@ nohup.out
 **/wandb
 **/output
 **/DAPT_DOCS.txt
+**.ipynb
+**/key/
+

@@ -2,7 +2,9 @@ import pickle
 import torch
 import numpy as np
 import pandas as pd
+import os
 import json
+import sklearn
 
 from datasets import load_from_disk
 from tqdm.auto import tqdm
@@ -167,14 +169,22 @@ def neg_sample_sim_scores(
 
     return sim_scores
 
-def get_train_dataset(data_path:str="/opt/ml/final-project-level3-nlp-11/data/MODEL/pair.json"):
-    with open(data_path, "r", encoding="utf-8-sig") as f:
+def get_train_dataset(data_path:str="/opt/ml/final-project-level3-nlp-11/data/MODEL"):
+    with open(os.path.join(data_path, "pair.json"), "r", encoding="utf-8-sig") as f:
         pair_data = json.load(f)
     
+    with open(os.path.join(data_path, "query_set.json"), "r", encoding="utf-8-sig") as f:
+        val_query_data = json.load(f)
+    
     context_info_dict = []
+    places = []
+    contexts = []
+    query_dict = []
     
     for area in pair_data:
         for place in pair_data[area]['관광지']:
+            for query in val_query_data[area]['관광지'][place]:
+                query_dict.append({"query": query, "place": place})
             for pair in pair_data[area]['관광지'][place]:
                 context_info_dict.append(
                     {
@@ -184,13 +194,16 @@ def get_train_dataset(data_path:str="/opt/ml/final-project-level3-nlp-11/data/MO
                         "context":pair["context"],
                     }
                 )
+                places.append(place)
+                contexts.append(pair["context"])
     
-    df_info = pd.DataFrame(context_info_dict)
+    df_cont_info = sklearn.utils.shuffle(pd.DataFrame(context_info_dict), random_state=2022)
+    df_query_info = pd.DataFrame(query_dict)
     
-    info_train, info_val = train_test_split(
-        df_info, test_size=0.2, random_state=2022, stratify=df_info["place"])
+    #info_train, info_val = train_test_split(
+    #    df_info, test_size=0.2, random_state=2022, stratify=df_info["place"])
     
-    f = Features(
+    f_c = Features(
         {
             "area": Value(dtype="string", id=None),
             "place": Value(dtype="string", id=None),
@@ -199,5 +212,11 @@ def get_train_dataset(data_path:str="/opt/ml/final-project-level3-nlp-11/data/MO
         }
     )
     
-    return DatasetDict({"train": Dataset.from_pandas(info_train, features=f),
-                        "validation": Dataset.from_pandas(info_val, features=f)})
+    f_v = Features(
+        {
+            "place": Value(dtype="string", id=None),
+            "query": Value(dtype="string", id=None),
+        }
+    )
+    return DatasetDict({"train": Dataset.from_pandas(df_cont_info, features=f_c),
+                        "validation": Dataset.from_pandas(df_query_info, features=f_v)}), contexts, places

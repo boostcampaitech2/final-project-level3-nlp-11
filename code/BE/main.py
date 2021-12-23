@@ -53,25 +53,17 @@ survey_logger = Logger(
 )
 
 ### 장소 묘사
-p_model = "./saved_models/p_encoder"
-q_model = "./saved_models/q_encoder"
-tokenizer = "klue/bert-base"
-embedding_path = "./saved_models/dense_embedding.bin"
+p_model = P_ENCODER_PATH
+q_model = Q_ENCODER_PATH
+tokenizer = "monologg/kobigbird-bert-base"
+embedding_path = EMBEDDING_PATH
 
 model: DenseRetrieval = None
 
 ### 유사명소
-data_path = "../../data"
+data_path = DATA_PATH
 json_file_name = "pair.json"
-tokenizer = "klue/bert-base"
-
-similar_retrieval_model: SimilarSparse = None
-
-
-### 유사명소
-data_path = "../../data"
-json_file_name = "pair.json"
-tokenizer = "klue/bert-base"
+tokenizer = "monologg/kobigbird-bert-base"
 
 similar_retrieval_model: SimilarSparse = None
 

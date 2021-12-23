@@ -12,4 +12,4 @@ nohup.out
 **/DAPT_DOCS.txt
 **.ipynb
 **/key/
-
+*.lock

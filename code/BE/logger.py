@@ -3,14 +3,6 @@ from google.cloud import bigquery
 from google.oauth2 import service_account
 
 
-log_format = ", ".join(
-    [
-        f"%({key})s"
-        for key in sorted(["filename", "levelname", "name", "message", "created"])
-    ]
-)
-
-
 class Logger:
     def __init__(
         self, table_id: str, credential_json_path: service_account.Credentials

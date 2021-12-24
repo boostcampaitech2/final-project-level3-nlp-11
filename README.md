@@ -34,11 +34,7 @@
 - google-api-python-client==2.33.0
 
 ### Structure
-   
-<details>
-<summary> See Structure </summary>
-    
-    
+     
 ```
 root
 │  .gitignore
@@ -156,8 +152,6 @@ root
         retrieval.py
         retrieval_similar.py
 ```
-
-</details>
 
 
 ### How to use

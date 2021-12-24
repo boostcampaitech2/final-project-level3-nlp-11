@@ -22,3 +22,9 @@ pip install elasticsearch
 
 ## DAPT
 pip install git+https://github.com/huggingface/transformers
+
+## BE
+pip install fastapi==0.70.0
+pip install uvicorn==0.15.0
+pip install google-cloud-storage==1.43.0
+pip install google-api-python-client==2.33.0

@@ -396,9 +396,6 @@ if __name__ == "__main__":
         help="wiki embedding save path",
     )
     parser.add_argument(
-        "--save_epoch", default=10, type=int, help="save encoders per epoch"
-    )
-    parser.add_argument(
         "--log_step", default=50, type=int, help="log loss to wandb per step"
     )
     parser.add_argument(

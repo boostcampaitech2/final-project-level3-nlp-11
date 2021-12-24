@@ -15,6 +15,7 @@ pip install torch==1.10.0
 pip install torchvision==0.11.1
 pip install efficientnet-pytorch==0.7.1
 pip install PyYAML==6.0
+pip install streamlit-modal
 
 # Model
 pip install elasticsearch

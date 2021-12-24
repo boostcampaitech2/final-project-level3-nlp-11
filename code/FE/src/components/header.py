@@ -1,5 +1,6 @@
 import os
 import streamlit as st
+import streamlit_modal as modal
 
 from dotenv import load_dotenv
 
@@ -50,6 +51,22 @@ def header():
         <br>
         <br>
         <br>
-
     """
+    style = f"""
+        <style>
+            div.stButton > button:first-child {{float:right;border:0;outline:0;}}
+        </style>
+    """
+    modal_html = f"""
+        <img src="https://i.imgur.com/pTbrvsS.png" style="width:100%" />
+    """
+    # components.html(html)
+    st.markdown(style, unsafe_allow_html=True)
+    openbutton = st.button("튜토리얼 보기")
+    if openbutton:
+        with modal.container() as container:
+            button = container.button("닫기")
+            container.markdown(modal_html, unsafe_allow_html=True)
+            if button:
+                modal.close()
     st.markdown(html, unsafe_allow_html=True)

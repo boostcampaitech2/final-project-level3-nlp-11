@@ -1,5 +1,5 @@
 ## Structure
-
+```
 │  └─MODEL
 │      ├─DAPT
 │      │      DAPT.sh
@@ -15,7 +15,7 @@
 │      └─sparse
 │              elastic_search.py
 │              elastic_search.sh
-
+```
 
 ### How to use
 

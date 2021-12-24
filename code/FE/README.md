@@ -1,4 +1,5 @@
 ## Structure
+```
 ├─FE
 │  ├─src
 │  │  │  app.py
@@ -33,7 +34,7 @@
 │  │
 │  └─static
 │          logo.png
-
+```
 
 ### How to use
 streamlit config

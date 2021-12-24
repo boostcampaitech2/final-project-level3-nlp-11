@@ -1,4 +1,5 @@
 ## Structure
+```
 ├─DATA_GEN
 │  │  main.py
 │  │  split_chunks.py
@@ -33,7 +34,7 @@
 │              preprocess_blog.py
 │              preprocess_google.py
 │              __init__.py
-
+```
 ### How to use
 
 fix the config

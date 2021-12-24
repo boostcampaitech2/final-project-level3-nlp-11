@@ -104,7 +104,7 @@ def info_page(query_params, cookie_manager):
 
         st.markdown(html_survey, unsafe_allow_html=True)
 
-        col1, col2, col3 = st.columns([4, 3, 5])
+        col1, col2, col3, col4 = st.columns([1, 2, 2, 2])
         with col1:
             pass
         with col2:
@@ -112,6 +112,7 @@ def info_page(query_params, cookie_manager):
 
         with col3:
             st.button("싫어요 ㅠ", on_click=set_cookie, kwargs=dict(flag=False))
+        with col4:
+            pass
 
-    # 이런식으로 query 존재 여부 확인
     st.markdown(html_list, unsafe_allow_html=True)

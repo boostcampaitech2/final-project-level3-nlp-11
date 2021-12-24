@@ -19,6 +19,7 @@ env_path = os.path.expanduser("~/final-project-level3-nlp-11/code/.env")
 load_dotenv(dotenv_path=env_path, verbose=True)
 from google.auth.environment_vars import CREDENTIALS
 
+
 sys.path.append("/opt/ml/final-project-level3-nlp-11/code/MODEL/sparse")
 from elastic_search import ElasticSearch
 
@@ -53,15 +54,15 @@ survey_logger = Logger(
 )
 
 ### 장소 묘사
-p_model = P_ENCODER_PATH
-q_model = Q_ENCODER_PATH
+p_model = os.getenv("P_ENCODER_PATH")
+q_model = os.getenv("Q_ENCODER_PATH")
 tokenizer = "monologg/kobigbird-bert-base"
-embedding_path = EMBEDDING_PATH
+embedding_path = os.getenv("EMBEDDING_PATH")
 
 model: DenseRetrieval = None
 
 ### 유사명소
-data_path = DATA_PATH
+data_path = os.getenv("DATA_PATH")
 json_file_name = "pair.json"
 tokenizer = "monologg/kobigbird-bert-base"
 
